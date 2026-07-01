@@ -134,3 +134,6 @@ Thumbs.db
 # Local environment
 .env.local
 .env.*.local
+
+# Others
+sessions.txt
