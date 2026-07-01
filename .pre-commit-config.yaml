@@ -26,7 +26,7 @@ repos:
 
       - id: ty
         name: ty check
-        entry: ty check
+        entry: ty check --python .venv
         language: python
         additional_dependencies: ["ty==0.0.56"]
         pass_filenames: false
