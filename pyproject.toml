@@ -13,9 +13,25 @@ dependencies = [
     "sqlalchemy",
     "sqlglot",
     "platformdirs",
+    "pydantic",
+    "pydantic-settings",
 ]
 
 [project.optional-dependencies]
+# Database drivers (DBAPIs). SQLAlchemy ships dialects, not drivers, so each
+# non-SQLite backend needs its connector installed. SQLite works out of the box
+# (stdlib sqlite3). Install only what you connect to, e.g. nl2sql[postgres,mysql].
+postgres = ["psycopg[binary]"]
+mysql = ["pymysql"]
+mssql = ["pyodbc"]
+oracle = ["oracledb"]
+all-drivers = [
+    "psycopg[binary]",
+    "pymysql",
+    "pyodbc",
+    "oracledb",
+]
+
 dev = [
     "ruff==0.15.20",
     "isort==8.0.1",

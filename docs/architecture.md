@@ -163,6 +163,11 @@ created per-call (engines are expensive and pooled).
 
 - **MCP:** FastMCP
 - **DB access:** SQLAlchemy (dialect-agnostic), connection strings
+- **DB drivers:** DBAPI drivers are **optional extras** (SQLAlchemy ships dialects,
+  not drivers). Supported v1 backends: PostgreSQL (`postgres` → `psycopg[binary]`),
+  MySQL/MariaDB (`mysql` → `pymysql`), SQL Server (`mssql` → `pyodbc`), Oracle
+  (`oracle` → `oracledb`); SQLite needs no install (stdlib). See `decisions.md` #13.
 - **Safety:** read-only DB role + client-side parse check (`sqlglot`)
 - **Paths/config:** `pathlib` + `platformdirs`
+- **Config/models:** `pydantic` + `pydantic-settings` (connection URLs as `SecretStr`)
 - **No** LangChain / LangGraph / embeddings / vector store in v1 (see `backlog.md`)

@@ -149,6 +149,28 @@ rare).
   (`user_config_dir("nl2sql")`) rather than a hardcoded `~/.config`, which is
   Linux-only.
 
+## 13. Database drivers as optional extras — Accepted
+
+SQLAlchemy ships dialects (SQL generation) but not DBAPI drivers (the connectors).
+Each supported backend needs its driver installed; drivers are exposed as
+**optional-dependency extras**, not core deps.
+
+- **Supported backends (v1):** PostgreSQL, MySQL/MariaDB, Microsoft SQL Server,
+  Oracle — plus **SQLite**, which needs no install (stdlib `sqlite3`).
+- **Extras → drivers:** `postgres` → `psycopg[binary]` (psycopg 3);
+  `mysql` → `pymysql` (pure-Python, easiest cross-platform); `mssql` → `pyodbc`;
+  `oracle` → `oracledb` (thin mode, no Oracle client needed). `all-drivers`
+  installs every one. Install per need, e.g. `pip install nl2sql[postgres,mysql]`.
+- **Alternatives rejected:** bundling all drivers into core deps — pulls heavy /
+  system-level dependencies (notably `pyodbc` needs a system ODBC driver) onto every
+  install, including users who only touch one DB.
+- **Why:** keeps the core lean and cross-platform (Windows/macOS). The server can
+  *dialect* any SQLAlchemy-supported DB, but only *connects* to backends whose driver
+  is present — extras make that explicit. A missing driver surfaces as a clear
+  install hint, never a credential leak.
+- **Note:** `pyodbc` (mssql) additionally requires the OS-level ODBC driver
+  (e.g. Microsoft ODBC Driver for SQL Server); document per-OS setup when needed.
+
 ---
 
 ## Still open

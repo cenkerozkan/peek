@@ -1,49 +1,66 @@
 # Repo / Package Structure
 
-`src`-layout package managed with **uv**. The directory layout enforces the layered
-architecture in `architecture.md`: MCP tools stay thin, all logic lives in shared
-services, and every SQL path funnels through one safety chokepoint. v1 has **no
-internal LLM** — no pipeline, no LLM/embedding services.
+`src`-layout package, hatchling build (uv is the intended package manager; the
+current `.venv` was bootstrapped with `python3.13 -m venv` + pip). The directory
+layout enforces the layered architecture in `architecture.md`: MCP tools stay thin,
+all logic lives in shared services, and every SQL path funnels through one safety
+chokepoint. v1 has **no internal LLM** — no pipeline, no LLM/embedding services.
+
+Status markers: **✓** exists · **(planned)** not written yet.
 
 ```
 generic-nl-2-sql/
-├── pyproject.toml              # deps + build config (uv)
-├── uv.lock
-├── README.md
-├── CLAUDE.md · BRAINSTORM.md · docs/ · llm_friendly_docs/   (existing)
+├── pyproject.toml              ✓ deps + build config (hatchling)
+├── README.md                   ✓
+├── CLAUDE.md · BRAINSTORM.md · docs/ · llm_friendly_docs/   ✓
 ├── src/
 │   └── nl2sql/
-│       ├── __init__.py
-│       ├── server.py           # FastMCP entry: lifespan, wires tools → services
-│       ├── config.py           # settings + config-file path resolution (platformdirs)
+│       ├── __init__.py         ✓
+│       ├── config.py           ✓ AppConfig (pydantic-settings, NL2SQL_* env);
+│       │                       #   resolves config-file path via platformdirs; max_rows cap
+│       ├── errors.py           ✓ exception hierarchy (Nl2SqlError base: ConfigError,
+│       │                       #   RegistryError, …); messages never carry credentials
+│       ├── server.py           (planned) FastMCP entry: lifespan, wires tools → services
 │       │
 │       ├── tools/              # ── MCP TOOL LAYER (thin, agent-facing) ──
-│       │   ├── schema.py       #    list_tables, get_schema
-│       │   ├── sql.py          #    run_sql, validate_sql
-│       │   └── databases.py    #    list_databases  (read-only; NO register/remove)
+│       │   ├── schema.py       (planned) list_tables, get_schema
+│       │   ├── sql.py          (planned) run_sql, validate_sql
+│       │   └── databases.py    (planned) list_databases (read-only; NO register/remove)
 │       │
 │       ├── services/           # ── SERVICE LAYER (all business logic) ──
-│       │   ├── connection_registry.py   # load/validate connections at startup;
+│       │   ├── connection_registry.py   (planned) load/validate connections at startup;
 │       │   │                            #   add/remove logic behind iface for future CLI
-│       │   ├── schema_service.py        # introspection: list tables, get schema
-│       │   └── sql_service.py  #    validate (read-only check) + execute ← safety chokepoint
+│       │   ├── schema_service.py        (planned) introspection: list tables, get schema
+│       │   └── sql_service.py  (planned) validate (read-only check) + execute ← chokepoint
 │       │
 │       ├── safety/
-│       │   └── guard.py        #    sqlglot read-only parse check (used by sql_service)
+│       │   └── guard.py        ✓ sqlglot read-only parse check: ensure_read_only()
+│       │                       #   raises UnsafeSQLError; used by sql_service
 │       │
 │       ├── infra/              # ── INFRASTRUCTURE (long-lived resources) ──
-│       │   ├── engines.py      #    build/cache SQLAlchemy engines from conn strings
-│       │   └── config_file.py  #    read/parse the user's alias → conn-string file
+│       │   ├── config_file.py  ✓ read/parse the user's alias → conn-string TOML file
+│       │   └── engines.py      (planned) build/cache SQLAlchemy engines from conn strings
 │       │
-│       └── models/             #    Pydantic schemas for tool I/O
-│           └── ...
-└── tests/                      #    mirrors src/nl2sql/ (services/, tools/, safety/, …)
+│       └── models/             #    Pydantic schemas
+│           └── config.py       ✓ DatabaseEntry (url as SecretStr — never leaks in repr/logs)
+└── tests/                      #    mirrors src/nl2sql/
+    └── safety/
+        └── test_guard.py       ✓ proves non-SELECT / mutating statements are rejected
 ```
 
 Deferred modules (would return with the suspended internal pipeline — see
 `backlog.md`): `pipeline/`, `services/llm_service.py`, `services/embedding_service.py`,
 `infra/llm.py`, `infra/vectorstore.py`, and the coarse `tools/query.py`
 (`ask_database`).
+
+**Concrete choices locked in by the first modules:**
+- Connection-registry file is **TOML** (`databases.toml`), shaped as
+  `[databases.<alias>]` with `url` (+ optional `dialect`). Resolves the earlier
+  TOML-vs-JSON open question.
+- **Pydantic / pydantic-settings** for config + models; connection URLs are held as
+  **`SecretStr`** so they never appear in a `repr()`, log, or dump — a concrete
+  enforcement of credential isolation.
+- `run_sql` row cap lives in `AppConfig.max_rows`.
 
 ## How the layout enforces the architecture
 
