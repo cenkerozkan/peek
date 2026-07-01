@@ -1,0 +1,33 @@
+minimum_pre_commit_version: "4.0.0"
+
+repos:
+  - repo: local
+    hooks:
+      - id: isort
+        name: isort
+        entry: isort
+        language: python
+        additional_dependencies: ["isort==8.0.1"]
+        types: [python]
+
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix
+        language: python
+        additional_dependencies: ["ruff==0.15.20"]
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: python
+        additional_dependencies: ["ruff==0.15.20"]
+        types: [python]
+
+      - id: ty
+        name: ty check
+        entry: ty check
+        language: python
+        additional_dependencies: ["ty==0.0.56"]
+        pass_filenames: false
+        types: [python]

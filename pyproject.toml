@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nl2sql"
+version = "0.1.0"
+description = "Safe, multi-database, read-only SQL MCP server"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp",
+    "sqlalchemy",
+    "sqlglot",
+    "platformdirs",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.15.20",
+    "isort==8.0.1",
+    "ty==0.0.56",
+    "pre-commit==4.6.0",
+    "pytest==9.1.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nl2sql"]
+
+[tool.ruff]
+# Strict PEP8: 79-char lines. (Adjustable if the team finds it too tight.)
+line-length = 79
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W = pycodestyle (PEP8), F = pyflakes, B = bugbear, D = pydocstyle,
+# ERA = commented-out code (supports the "no comment lines" house rule).
+# NOTE: pyupgrade (UP) is intentionally NOT enabled, so ruff never rewrites
+# typing.Optional/Union into `X | Y` pipe syntax. House rule: use `typing`.
+select = ["E", "W", "F", "B", "D", "ERA"]
+# Docstrings are optional (allowed, not required) except MCP tools — so ignore
+# the "missing docstring" rules. Google style is enforced when a docstring exists.
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.isort]
+profile = "black"
+line_length = 79
+src_paths = ["src", "tests"]
+known_first_party = ["nl2sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
