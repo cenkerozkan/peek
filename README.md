@@ -1,4 +1,4 @@
-# nl2sql
+# peek
 
 A safe, multi-database, **read-only SQL MCP server**. It exposes database
 introspection and query-execution tools over any SQLAlchemy-supported database, so an

@@ -90,7 +90,7 @@ string`; the server reads and validates it at startup and builds the in-memory
   `list_databases` (read-only) is exposed to the model.
 - **Management for now:** hand-edit the config file. Registration/removal logic
   still lives behind the `connection_registry` interface so a later non-model
-  **admin CLI** (`nl2sql db add/remove`) can reuse it. Structure kept changeable.
+  **admin CLI** (`peek db add/remove`) can reuse it. Structure kept changeable.
 - **Alternatives rejected:** (a) TinyDB store + `register`/`remove` MCP tools —
   redundant once the user maintains a config file, and giving the model registration
   power is a privilege it shouldn't have; (b) full connection strings in the MCP
@@ -146,7 +146,7 @@ rare).
 
 - **Why / how:** use `pathlib.Path` for all path work (no string concatenation or
   hardcoded separators); resolve user directories via `platformdirs`
-  (`user_config_dir("nl2sql")`) rather than a hardcoded `~/.config`, which is
+  (`user_config_dir("peek")`) rather than a hardcoded `~/.config`, which is
   Linux-only.
 
 ## 13. Database drivers as optional extras — Accepted
@@ -160,7 +160,7 @@ Each supported backend needs its driver installed; drivers are exposed as
 - **Extras → drivers:** `postgres` → `psycopg[binary]` (psycopg 3);
   `mysql` → `pymysql` (pure-Python, easiest cross-platform); `mssql` → `pyodbc`;
   `oracle` → `oracledb` (thin mode, no Oracle client needed). `all-drivers`
-  installs every one. Install per need, e.g. `pip install nl2sql[postgres,mysql]`.
+  installs every one. Install per need, e.g. `pip install peek[postgres,mysql]`.
 - **Alternatives rejected:** bundling all drivers into core deps — pulls heavy /
   system-level dependencies (notably `pyodbc` needs a system ODBC driver) onto every
   install, including users who only touch one DB.

@@ -1,11 +1,11 @@
-"""Tests for :mod:`nl2sql.infra.config_file`."""
+"""Tests for :mod:`peek.infra.config_file`."""
 
 from pathlib import Path
 
 import pytest
 
-from src.nl2sql.errors import ConfigError
-from src.nl2sql.infra.config_file import load_registry
+from src.peek.errors import ConfigError
+from src.peek.infra.config_file import load_registry
 
 VALID_TOML = """
 [databases.psql]

@@ -9,16 +9,16 @@ chokepoint. v1 has **no internal LLM** — no pipeline, no LLM/embedding service
 Status markers: **✓** exists · **(planned)** not written yet.
 
 ```
-generic-nl-2-sql/
+peek/
 ├── pyproject.toml              ✓ deps + build config (hatchling)
 ├── README.md                   ✓
 ├── CLAUDE.md · BRAINSTORM.md · docs/ · llm_friendly_docs/   ✓
 ├── src/
-│   └── nl2sql/
+│   └── peek/
 │       ├── __init__.py         ✓
-│       ├── config.py           ✓ AppConfig (pydantic-settings, NL2SQL_* env);
+│       ├── config.py           ✓ AppConfig (pydantic-settings, PEEK_* env);
 │       │                       #   resolves config-file path via platformdirs; max_rows cap
-│       ├── errors.py           ✓ exception hierarchy (Nl2SqlError base: ConfigError,
+│       ├── errors.py           ✓ exception hierarchy (PeekError base: ConfigError,
 │       │                       #   RegistryError, …); messages never carry credentials
 │       ├── server.py           (planned) FastMCP entry: lifespan, wires tools → services
 │       │
@@ -43,7 +43,7 @@ generic-nl-2-sql/
 │       │
 │       └── models/             #    Pydantic schemas
 │           └── config.py       ✓ DatabaseEntry (url as SecretStr — never leaks in repr/logs)
-└── tests/                      #    mirrors src/nl2sql/
+└── tests/                      #    mirrors src/peek/
     └── safety/
         └── test_guard.py       ✓ proves non-SELECT / mutating statements are rejected
 ```

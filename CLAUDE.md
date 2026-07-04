@@ -33,7 +33,7 @@ Status: **architecture/brainstorming phase** — no application code yet.
   See `docs/architecture.md` → Credential isolation.
 - **Cross-platform.** Users run Windows and macOS (rarely Linux). Use `pathlib.Path`
   for all path work — never string concatenation or hardcoded `/` or `\`. Resolve
-  user directories via `platformdirs` (e.g. `user_config_dir("nl2sql")`), never a
+  user directories via `platformdirs` (e.g. `user_config_dir("peek")`), never a
   hardcoded `~/.config`.
 
 ## Where to look

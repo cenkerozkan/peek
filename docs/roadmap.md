@@ -35,7 +35,7 @@ The most safety-critical piece; built first, in isolation.
 
 Get from a config file to validated, alias-addressed engines.
 
-- [x] `errors.py` — `Nl2SqlError` base + `ConfigError`, `RegistryError`.
+- [x] `errors.py` — `PeekError` base + `ConfigError`, `RegistryError`.
 - [x] `models/config.py` — `DatabaseEntry` with a `SecretStr` url (no password in
       repr/logs). *(Decided: config format is **TOML**.)*
 - [x] `config.py` — `AppConfig` (pydantic-settings): registry-file path via
@@ -94,7 +94,7 @@ Thin FastMCP tools; docstrings are the agent-facing contract.
       injects it into tools/services, disposes on shutdown. Stdio transport.
 - [ ] Console entry point + `python -m` runnability.
 - [ ] Reconcile packaging with the `src.` import convention (a built wheel exposes
-      top-level `nl2sql`, not `src.nl2sql`) — see `[[feedback-src-prefixed-imports]]`.
+      top-level `peek`, not `src.peek`) — see `[[feedback-src-prefixed-imports]]`.
 
 ## Phase 7 — End-to-end & docs ⬜
 
@@ -110,7 +110,7 @@ Thin FastMCP tools; docstrings are the agent-facing contract.
 
 Tracked in `backlog.md`; do not start without a decision change.
 
-- [ ] Admin CLI — `nl2sql db add/remove` reusing the registry interface.
+- [ ] Admin CLI — `peek db add/remove` reusing the registry interface.
 - [ ] HTTP transport (core is already transport-agnostic).
 - [ ] Interactive TUI — reintroduces an internal NL→SQL brain (suspended pipeline).
 - [ ] Suspended internal NL→SQL pipeline, embedding-based schema retrieval.

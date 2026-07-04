@@ -1,10 +1,10 @@
-"""Tests for :class:`nl2sql.config.AppConfig`."""
+"""Tests for :class:`peek.config.AppConfig`."""
 
 from pathlib import Path
 
 import pytest
 
-from src.nl2sql.config import AppConfig
+from src.peek.config import AppConfig
 
 
 def test_default_resolved_config_file_ends_with_databases_toml() -> None:
@@ -25,8 +25,8 @@ def test_explicit_config_file_is_honored(tmp_path: Path) -> None:
 def test_env_var_overrides_max_rows(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """NL2SQL_MAX_ROWS overrides the default max_rows."""
-    monkeypatch.setenv("NL2SQL_MAX_ROWS", "42")
+    """PEEK_MAX_ROWS overrides the default max_rows."""
+    monkeypatch.setenv("PEEK_MAX_ROWS", "42")
 
     config = AppConfig()
 

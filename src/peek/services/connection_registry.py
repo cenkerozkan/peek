@@ -13,11 +13,11 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import Engine
 
-from src.nl2sql.config import AppConfig
-from src.nl2sql.errors import RegistryError
-from src.nl2sql.infra.config_file import load_registry
-from src.nl2sql.infra.engines import build_engine
-from src.nl2sql.models.config import DatabaseEntry
+from src.peek.config import AppConfig
+from src.peek.errors import RegistryError
+from src.peek.infra.config_file import load_registry
+from src.peek.infra.engines import build_engine
+from src.peek.models.config import DatabaseEntry
 
 
 class ConnectionRegistry:

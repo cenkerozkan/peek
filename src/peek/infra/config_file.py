@@ -20,8 +20,8 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-from src.nl2sql.errors import ConfigError
-from src.nl2sql.models.config import DatabaseEntry
+from src.peek.errors import ConfigError
+from src.peek.models.config import DatabaseEntry
 
 
 def load_registry(path: Path) -> Dict[str, DatabaseEntry]:

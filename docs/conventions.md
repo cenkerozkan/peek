@@ -40,7 +40,7 @@ Rules for writing code in this repo. Two zones:
 ### Cross-platform paths
 - Use `pathlib.Path` for all path work — no string concatenation, no hardcoded
   `/` or `\`.
-- Resolve user/config dirs via `platformdirs` (`user_config_dir("nl2sql")`) — never
+- Resolve user/config dirs via `platformdirs` (`user_config_dir("peek")`) — never
   a hardcoded `~/.config`. Target Windows/macOS (Linux rare).
 
 ### No internal LLM (v1)
@@ -95,7 +95,7 @@ around the hooks.
 - Error text must be safe to send to a model (see credential isolation in Zone A).
 
 ### Testing
-- **pytest** (9.1.1). `tests/` mirrors `src/nl2sql/` (see `structure.md`).
+- **pytest** (9.1.1). `tests/` mirrors `src/peek/` (see `structure.md`).
 - Required coverage for the safety chokepoint: `safety/guard.py` and `sql_service`
   must have tests proving non-SELECT / mutating statements are rejected.
 

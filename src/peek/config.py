@@ -10,7 +10,7 @@ _REGISTRY_FILENAME = "databases.toml"
 
 
 class AppConfig(BaseSettings):
-    """Server-wide settings, overridable via ``NL2SQL_*`` env vars.
+    """Server-wide settings, overridable via ``PEEK_*`` env vars.
 
     Attributes:
         config_file: Explicit path to the connection-registry TOML file.
@@ -19,7 +19,7 @@ class AppConfig(BaseSettings):
         max_rows: Default row cap applied by ``run_sql``.
     """
 
-    model_config = SettingsConfigDict(env_prefix="NL2SQL_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="PEEK_", extra="ignore")
 
     config_file: Optional[Path] = None
     max_rows: int = 1000
@@ -33,4 +33,4 @@ class AppConfig(BaseSettings):
         """
         if self.config_file is not None:
             return self.config_file
-        return Path(user_config_dir("nl2sql")) / _REGISTRY_FILENAME
+        return Path(user_config_dir("peek")) / _REGISTRY_FILENAME

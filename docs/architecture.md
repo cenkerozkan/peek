@@ -109,10 +109,10 @@ Combined with a read-only DB role, that's the two-layer safety model.
   connections. `register_database` / `remove_database` are not MCP tools. The only
   registry tool exposed is **`list_databases`** (read-only).
 - **Future-proofing:** add/remove logic lives in `services/connection_registry.py`
-  behind a clean interface, so a later non-model **admin CLI** (`nl2sql db add/remove`)
+  behind a clean interface, so a later non-model **admin CLI** (`peek db add/remove`)
   can reuse it. Not built now.
 - **Cross-platform paths:** any default/derived config location is resolved with
-  `platformdirs` (`user_config_dir("nl2sql")`) — OS-correct on Windows/macOS/Linux —
+  `platformdirs` (`user_config_dir("peek")`) — OS-correct on Windows/macOS/Linux —
   and all path handling uses `pathlib.Path`. (Most users are on Windows/macOS.)
 
 ## Credential isolation (hard rule)

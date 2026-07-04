@@ -1,8 +1,8 @@
-"""Tests for :class:`nl2sql.models.config.DatabaseEntry`."""
+"""Tests for :class:`peek.models.config.DatabaseEntry`."""
 
 from pydantic import SecretStr
 
-from src.nl2sql.models.config import DatabaseEntry
+from src.peek.models.config import DatabaseEntry
 
 
 def test_repr_does_not_leak_password() -> None:
