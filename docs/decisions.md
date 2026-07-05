@@ -92,9 +92,10 @@ string`; the server reads and validates it at startup and builds the in-memory
 - **Registration is NOT a model-facing tool.** The LLM must not add/remove
   connections, so `register_database` / `remove_database` are not MCP tools. Only
   `list_databases` (read-only) is exposed to the model.
-- **Management for now:** hand-edit the config file. Registration/removal logic
-  still lives behind the `connection_registry` interface so a later non-model
-  **admin CLI** (`peek db add/remove`) can reuse it. Structure kept changeable.
+- **Management:** hand-edit the config file, or use a planned **admin CLI**
+  (`peek db add/remove/list`) — see the sub-decision below. Registration/removal
+  logic lives behind the `connection_registry` interface so the CLI is a thin
+  consumer of it. Structure kept changeable.
 - **Alternatives rejected:** (a) TinyDB store + `register`/`remove` MCP tools —
   redundant once the user maintains a config file, and giving the model registration
   power is a privilege it shouldn't have; (b) full connection strings in the MCP
@@ -104,6 +105,34 @@ string`; the server reads and validates it at startup and builds the in-memory
   credentials out of both version control and the model's reach.
 
   Supersedes the earlier plan (dynamic TinyDB registry managed via MCP tools).
+
+### 7a. Admin CLI for database management (`peek db …`) — Accepted (2026-07-05)
+
+A human-facing CLI to add/remove/list database aliases, so users don't have to
+hand-edit the config file. Confirmed as the intended management path; scoped tightly
+for v1.
+
+- **Human tool, never a model tool.** `peek db add/remove/list` is invoked by a
+  person in their terminal. It is **not** registered on the FastMCP server and shares
+  no surface with the MCP tools — the hard rule that the model cannot add/remove
+  connections (only `list_databases`, read-only) is untouched. Nobody may later wire
+  these up as MCP tools.
+- **Credential isolation still applies.** The CLI writes connection strings **only**
+  to the local registry config file (the existing source of truth) — never to the
+  repo or the `.mcp.json` launch config. It should take the password interactively /
+  via env rather than a shell arg (keeps it out of shell history).
+- **Value over hand-editing:** validate the connection (attempt to connect) before
+  persisting the entry.
+- **Not live — restart required.** The registry is built once at startup (see
+  `architecture.md` → Server lifecycle); there is **no dynamic runtime
+  registration**. `peek db add/remove` edits the config file, and the user must
+  **restart the MCP server** for changes to take effect. Live/hot-reload is
+  explicitly deferred — a running stdio subprocess is owned by the IDE and restarts
+  are cheap, so an IPC/reload path isn't worth its complexity in v1.
+- **Scope / timing:** its own later phase (see `roadmap.md` → Later/deferred), after
+  the `connection_registry` interface has solidified — the CLI is a consumer of it.
+- **Revisit condition for live support:** reconsider hot-reload after the core
+  project is complete, if restart-to-apply proves too coarse in practice.
 
 ## 8. Layered architecture — Accepted (2026-07-01)
 
@@ -185,7 +214,7 @@ live in their own environment and never collide with anything else on the machin
 - **Prerequisite:** a console entry point — `[project.scripts] peek =
   "peek.server:main"` — plus `python -m peek`. This one addition unblocks `uvx`,
   `pipx`, and `python -m` simultaneously. (Tracked in the roadmap; ties to the
-  Phase 6 entry-point work.)
+  Phase 7 entry-point work.)
 - **Primary path — `uvx`:** we already use uv (`uv.lock` in the tree) and the MCP
   ecosystem has standardized on `uvx` for launch configs. The MCP client config
   becomes `{"command": "uvx", "args": ["peek"]}`. `uvx` runs the published version
@@ -201,6 +230,56 @@ live in their own environment and never collide with anything else on the machin
   environment — dependency collisions for what is an application, not a library;
   (b) leading with pipx — an extra install/upgrade step versus `uvx`'s ephemeral,
   always-latest run that matches our uv tooling and the ecosystem norm.
+
+## 15. `get_schema` output: structured columns, selector + pagination — Accepted (2026-07-05)
+
+`get_schema` returns **structured columns** (Pydantic), not DDL text: per column
+a name, dialect-native type string, nullability, default, and a primary-key flag,
+plus each table's primary key and foreign keys. Callers scope large databases
+with an explicit `tables=[...]` selector or, failing that, `limit`/`offset`
+pagination; `list_tables` is the cheap names-only call an agent makes first.
+Introspection covers **views** (each tagged by `kind`) and takes an optional
+`schema=` namespace, defaulting to the database's default schema.
+
+- **Alternatives rejected:** (a) raw DDL text — harder for the agent to parse and
+  not uniformly reconstructable across dialects via SQLAlchemy's inspector;
+  (b) columns-only with no keys — leaves the agent guessing at JOINs;
+  (c) indexes in the payload — deferred as noise the outer agent rarely needs;
+  (d) embedding-based schema retrieval — killed with the internal LLM (see #3).
+- **Why:** structured columns give the outer agent a uniform, machine-readable
+  shape across every backend; PK/FK are the minimum needed to write correct
+  JOINs; a selector plus pagination lets the agent manage its own context without
+  the server guessing relevance. Built on SQLAlchemy's `inspect()`; no SQL is
+  executed, so it does not route through the safety guard, but returns and errors
+  stay credential-free.
+
+## 16. Table exclusion: per-alias denylist, exact case-insensitive match — Accepted (2026-07-05)
+
+Each database alias may declare `exclude_tables` in the registry TOML — a
+denylist of tables that must never reach any LLM's context, orthogonal to the
+read-only guard. Matching is **exact and case-insensitive**: a bare name
+(`secrets`) excludes that table in any schema; a qualified name
+(`billing.invoices`) excludes only that schema's table. No glob/wildcard
+patterns in v1. The denylist is **not model-facing** — a single
+`is_excluded(alias, table)` accessor on the connection registry is the one
+source of truth. Effects: excluded tables are omitted from `list_tables`,
+rejected by `get_schema` as if nonexistent, scrubbed from other tables' foreign
+keys, and (from Phase 5) rejected at execution. Excluded names never appear in
+`describe`/`list_metadata` either, so their existence is never revealed.
+
+- **Alternatives rejected:** (a) glob/wildcard patterns — deferred; a broad
+  pattern can hide more than intended, and exact names are predictable and
+  simpler to test (revive if real denylists prove verbose); (b) case-sensitive
+  matching — SQL identifiers are usually case-insensitive, so a case-sensitive
+  denylist would silently miss `Secrets` vs `secrets`; (c) surfacing the denylist
+  in model-facing metadata — would reveal that hidden tables exist; (d) hiding
+  only from `list_tables` — an excluded name would still leak via another table's
+  foreign key or an explicit `get_schema`/query, so exclusion is enforced at
+  every read surface.
+- **Why:** environments (prod/uat/dev) contain tables that must stay invisible
+  regardless of read-only access; a config-driven, not-model-facing denylist with
+  one accessor keeps every service consistent and makes "invisible means
+  invisible" a structural property rather than a per-caller courtesy.
 
 ---
 

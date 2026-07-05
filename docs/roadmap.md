@@ -51,18 +51,45 @@ Get from a config file to validated, alias-addressed engines.
 
 ---
 
-## Phase 3 — Schema service (introspection) 🚧
+## Phase 3 — Table exclusion (per-DB denylist) ✅
 
-- [ ] Resolve open question: `get_schema` output shape (structured columns vs DDL)
-      and its pagination/filter params. *(Leaning: structured columns.)* Record the
-      decision in `decisions.md` and clear it from `BRAINSTORM.md`.
-- [ ] `services/schema_service.py` — over a registry engine (SQLAlchemy `inspect`):
+A third safety layer, orthogonal to read-only: a user-defined **per-alias denylist
+of tables that must never reach any LLM's context**, regardless of environment
+(prod/uat/dev). Config-driven and **not model-facing** — the model can neither see
+nor query an excluded table. Built here so the schema and SQL services below are
+exclusion-aware from the start.
+
+- [x] Extend the registry config: per-alias `exclude_tables` (schema-qualifiable
+      table names) in the TOML; parse/validate in `models/config.py`
+      (`DatabaseEntry.exclude_tables`, default empty). Retained per-alias in
+      `connection_registry` but **deliberately not exposed** in `describe`/
+      `list_metadata` — surfacing excluded names there would reveal hidden tables
+      to the model (see `decisions.md` #16).
+- [x] Decide + record matching semantics in `decisions.md` #16: case-insensitive,
+      schema-qualification (bare = any schema, `schema.table` = that schema),
+      exact names — no glob/wildcard patterns in v1.
+- [x] `is_excluded(alias, table, schema=None)` on `connection_registry` — the
+      single source of truth both the schema and SQL services consume.
+- [x] Tests: exclusions load and validate; the accessor matches per the chosen
+      semantics; unknown/empty lists are handled.
+
+## Phase 4 — Schema service (introspection) ✅
+
+- [x] Resolve open question: `get_schema` output shape (structured columns vs DDL)
+      and its pagination/filter params. *(Decided: structured columns + PK/FK,
+      table selector + `limit`/`offset`, views + optional `schema`; see
+      `decisions.md` #15.)*
+- [x] `services/schema_service.py` — over a registry engine (SQLAlchemy `inspect`):
       `list_tables(alias)` and `get_schema(alias, ...)` with pagination/filtering.
       No credentials in returns or errors.
-- [ ] `models/` — Pydantic I/O types for table lists and schema results.
-- [ ] Tests against a SQLite fixture with a couple of tables.
+- [x] **Honor the denylist (Phase 3):** excluded tables are omitted from
+      `list_tables`, rejected by `get_schema` (as if nonexistent), and scrubbed
+      from other tables' foreign keys — an excluded table is fully invisible.
+- [x] `models/schema.py` — Pydantic I/O types for table lists and schema results.
+- [x] Tests against a SQLite fixture with a couple of tables, incl. a case proving
+      an excluded table never appears in any output.
 
-## Phase 4 — SQL service (the execution chokepoint) ⬜
+## Phase 5 — SQL service (the execution chokepoint) ⬜
 
 - [ ] Resolve open question: `run_sql` row cap enforcement (`max_rows`), max result
       size, and the result serialization shape. *(Leaning: `{columns, rows,
@@ -72,11 +99,17 @@ Get from a config file to validated, alias-addressed engines.
 - [ ] `services/sql_service.py` — `validate(alias, sql)` (calls `safety/guard.py`)
       and `execute(alias, sql)` (validate → run read-only → cap rows → serialize).
       **Every SQL path goes through here.**
+- [ ] **Enforce the denylist (Phase 3) at execution:** after the read-only check,
+      parse the statement's table references (incl. CTEs/subqueries) and reject any
+      query that touches an excluded table — hiding it from introspection is not
+      enough on its own. Rejection message names only "table not permitted", never
+      the schema or credentials.
 - [ ] `models/` — Pydantic types for query results and validation outcomes.
-- [ ] Tests proving execution is impossible without passing the guard, that the row
-      cap and truncation flag work, and that errors are credential-safe.
+- [ ] Tests proving execution is impossible without passing the guard, that a query
+      naming an excluded table is rejected, that the row cap and truncation flag
+      work, and that errors are credential-safe.
 
-## Phase 5 — MCP tool layer (thin) ⬜
+## Phase 6 — MCP tool layer (thin) ⬜
 
 Thin FastMCP tools; docstrings are the agent-facing contract.
 
@@ -88,7 +121,7 @@ Thin FastMCP tools; docstrings are the agent-facing contract.
       (credential-safe) response. No business logic in tool bodies.
 - [ ] Tests asserting the tool contracts and error shaping.
 
-## Phase 6 — Server wiring & lifecycle ⬜
+## Phase 7 — Server wiring & lifecycle ⬜
 
 - [ ] `server.py` — FastMCP entry: lifespan builds the `ConnectionRegistry` once,
       injects it into tools/services, disposes on shutdown. Stdio transport.
@@ -96,12 +129,12 @@ Thin FastMCP tools; docstrings are the agent-facing contract.
 - [ ] Reconcile packaging with the `src.` import convention (a built wheel exposes
       top-level `peek`, not `src.peek`) — see `[[feedback-src-prefixed-imports]]`.
 
-## Phase 7 — Packaging & distribution ⬜
+## Phase 8 — Packaging & distribution ⬜
 
 Make peek installable as an isolated app. See `decisions.md` #14.
 
 - [ ] `[project.scripts] peek = "peek.server:main"` — console entry point (builds
-      on the Phase 6 entry-point work) so `uvx peek`, `pipx install peek`, and
+      on the Phase 7 entry-point work) so `uvx peek`, `pipx install peek`, and
       `python -m peek` all resolve to a runnable command.
 - [ ] Verify `uvx peek` (primary) and `pipx install peek` (supported alternative)
       both launch cleanly, including the driver-extra syntax
@@ -109,12 +142,13 @@ Make peek installable as an isolated app. See `decisions.md` #14.
 - [ ] Confirm the entry point starts with no shell assumptions on Windows/macOS
       (see decision #12).
 
-## Phase 8 — End-to-end & docs ⬜
+## Phase 9 — End-to-end & docs ⬜
 
 - [ ] Manual end-to-end: register a real DB alias, drive `list_databases` →
       `list_tables` → `get_schema` → `validate_sql` → `run_sql` from an MCP client.
 - [ ] Document the MCP launch config (config-file *path* only — never credentials)
-      and a sample `databases.toml`. Lead the install/launch story with
+      and a sample `databases.toml`, including a per-alias `exclude_tables` example
+      (Phase 3). Lead the install/launch story with
       `uvx peek` (`{"command": "uvx", "args": ["peek"]}`); note `pipx install peek`
       as the alternative and the driver-extra syntax (see `decisions.md` #14).
 - [ ] Read-only DB role guidance (the second, independent safety layer).
@@ -125,7 +159,10 @@ Make peek installable as an isolated app. See `decisions.md` #14.
 
 Tracked in `backlog.md`; do not start without a decision change.
 
-- [ ] Admin CLI — `peek db add/remove` reusing the registry interface.
+- [ ] Admin CLI — `peek db add/remove/list` reusing the registry interface. Human
+      tool only (never an MCP tool); writes connection strings solely to the local
+      config file; validates the connection before persisting; **restart to apply**
+      (no live reload in v1). See `decisions.md` #7a.
 - [ ] HTTP transport (core is already transport-agnostic).
 - [ ] Interactive TUI — reintroduces an internal NL→SQL brain (suspended pipeline).
 - [ ] Suspended internal NL→SQL pipeline, embedding-based schema retrieval.
