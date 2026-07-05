@@ -7,8 +7,6 @@ item below is settled, promote it into the right `docs/` file and delete it here
 ## Open questions
 
 - **Config file format** for the connection registry — TOML vs JSON?
-- **`run_sql` limits** — row cap, max result size, and the result serialization
-  shape returned to the agent.
 - **Cross-database questions** — can one request ever need to span multiple DBs?
   (Currently scoped to one DB per request; revisit only if a real need appears.)
 - **TUI** (deferred) — framework (Textual vs prompt_toolkit), result formatting,

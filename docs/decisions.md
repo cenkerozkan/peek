@@ -290,6 +290,47 @@ grant access, rather than answering confidently from a partial schema.
   while the agent still knows to ask a human when a question may need withheld
   data.
 
+## 17. `run_sql` result shape, global row cap, and dialect mapping — Accepted (2026-07-05)
+
+The SQL service (`sql_service`) is the single execution chokepoint (decision #8);
+these settle the three open questions the roadmap flagged for it.
+
+- **Result shape — columns + positional rows.** `run_sql` returns
+  `{alias, columns: [names], rows: [[…]], row_count, truncated}`: rows are
+  positional arrays aligned to `columns`, so column names are not repeated per
+  row. Non-JSON-native cell values are coerced to safe primitives
+  (`datetime/date/time` → ISO string, `Decimal`/`UUID` → string, `bytes` →
+  a `"<binary: N bytes>"` marker so binary/huge blobs never enter the model's
+  context; other types → `str()`).
+- **Row cap — global `max_rows` only.** The cap is `AppConfig.max_rows`
+  (default 1000); there is **no** per-call limit param in v1. Truncation is
+  detected by fetching `max_rows + 1` rows and setting `truncated` when the
+  extra row appears; only the first `max_rows` are returned.
+- **Validation raises; tools shape it.** `validate()`/`execute()` **raise** on
+  rejection (`UnsafeSQLError`, or its subclass `ExcludedTableError` for a
+  denylisted table). The Phase 6 tool layer catches and shapes these into a
+  structured `{valid, message}` / error payload — the service itself returns no
+  validation-outcome model.
+- **Dialect mapping — SQLAlchemy name → `sqlglot` name.** A pure
+  `infra/dialects.to_sqlglot_dialect` maps `postgresql→postgres`,
+  `mysql`/`mariadb→mysql`, `mssql→tsql`, `oracle→oracle`, `sqlite→sqlite`;
+  unknown → `None` (guard parses generic). The connection registry stores the
+  effective dialect per alias — the `DatabaseEntry.dialect` override wins,
+  else the mapping — and exposes it via `sqlglot_dialect(alias)` so the guard
+  parses each alias's SQL in the right dialect.
+- **Denylist enforced at execution.** After the read-only check, `validate`
+  walks the parsed AST for `exp.Table` nodes (incl. CTEs/subqueries) and rejects
+  any query touching a denylisted table (decision #16) — hiding it from
+  introspection is not enough on its own. A CTE name that collides with a
+  denylisted name is over-rejected, which is safe.
+- **Alternatives rejected:** (a) list-of-dicts rows — self-describing but
+  repeats every column name, costing tokens on wide/large results;
+  (b) a per-call row limit — deferred; the global cap is enough for v1 and one
+  knob is simpler (revive if agents need small previews without post-filtering);
+  (c) returning a validation-outcome model from the service — the raise/catch
+  split keeps the service's contract uniform and puts model-facing shaping in
+  the thin tool layer where it belongs.
+
 ---
 
 ## Still open

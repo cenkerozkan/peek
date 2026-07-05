@@ -99,6 +99,37 @@ def test_remove_unknown_alias_raises_registry_error(
         registry.remove("does-not-exist")
 
 
+def test_sqlglot_dialect_maps_from_engine(
+    registry: ConnectionRegistry,
+) -> None:
+    """A sqlite engine resolves to the sqlglot 'sqlite' dialect."""
+    assert registry.sqlglot_dialect("main") == "sqlite"
+
+
+def test_sqlglot_dialect_honors_entry_override(tmp_path: Path) -> None:
+    """An explicit dialect in the config wins over the engine mapping."""
+    path = _write_registry(
+        tmp_path,
+        """
+        [databases.main]
+        url = "sqlite://"
+        dialect = "postgres"
+        """,
+    )
+    config = AppConfig(config_file=path)
+    registry = ConnectionRegistry.from_config(config)
+
+    assert registry.sqlglot_dialect("main") == "postgres"
+
+
+def test_sqlglot_dialect_unknown_alias_raises_registry_error(
+    registry: ConnectionRegistry,
+) -> None:
+    """An unknown alias raises RegistryError, like get_engine."""
+    with pytest.raises(RegistryError):
+        registry.sqlglot_dialect("does-not-exist")
+
+
 def _excluding_registry(tmp_path: Path) -> ConnectionRegistry:
     path = _write_registry(
         tmp_path,

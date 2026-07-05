@@ -91,23 +91,29 @@ exclusion-aware from the start.
 - [x] Tests against a SQLite fixture with a couple of tables, incl. a case proving
       an excluded table never appears in any output.
 
-## Phase 5 — SQL service (the execution chokepoint) ⬜
+## Phase 5 — SQL service (the execution chokepoint) ✅
 
-- [ ] Resolve open question: `run_sql` row cap enforcement (`max_rows`), max result
-      size, and the result serialization shape. *(Leaning: `{columns, rows,
-      truncated}`.)* Record in `decisions.md`; clear from `BRAINSTORM.md`.
-- [ ] Dialect mapping — SQLAlchemy dialect name → `sqlglot` dialect, so the guard
-      parses in the right dialect per alias.
-- [ ] `services/sql_service.py` — `validate(alias, sql)` (calls `safety/guard.py`)
+- [x] Resolve open question: `run_sql` row cap enforcement (`max_rows`), max result
+      size, and the result serialization shape. *(Decided: `{alias, columns, rows,
+      row_count, truncated}` with positional rows, global `max_rows` only, validate
+      raises; see `decisions.md` #17.)* Recorded in `decisions.md`; cleared from
+      `BRAINSTORM.md`.
+- [x] Dialect mapping — SQLAlchemy dialect name → `sqlglot` dialect
+      (`infra/dialects.py`), stored per alias on the registry
+      (`sqlglot_dialect(alias)`, honoring the `DatabaseEntry.dialect` override), so
+      the guard parses in the right dialect per alias.
+- [x] `services/sql_service.py` — `validate(alias, sql)` (calls `safety/guard.py`)
       and `execute(alias, sql)` (validate → run read-only → cap rows → serialize).
       **Every SQL path goes through here.**
-- [ ] **Enforce the denylist (Phase 3) at execution:** after the read-only check,
-      parse the statement's table references (incl. CTEs/subqueries) and reject any
-      query that touches an excluded table — hiding it from introspection is not
+- [x] **Enforce the denylist (Phase 3) at execution:** after the read-only check,
+      `validate` walks the parsed AST's table references (incl. CTEs/subqueries) and
+      rejects any query that touches an excluded table via
+      `ExcludedTableError(UnsafeSQLError)` — hiding it from introspection is not
       enough on its own. Rejection message names only "table not permitted", never
       the schema or credentials.
-- [ ] `models/` — Pydantic types for query results and validation outcomes.
-- [ ] Tests proving execution is impossible without passing the guard, that a query
+- [x] `models/query.py` — Pydantic `QueryResult`. *(Validation-outcome shaping is
+      deferred to the Phase 6 tool layer, since `validate` raises.)*
+- [x] Tests proving execution is impossible without passing the guard, that a query
       naming an excluded table is rejected, that the row cap and truncation flag
       work, and that errors are credential-safe.
 
