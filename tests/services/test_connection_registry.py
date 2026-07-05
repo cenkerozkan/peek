@@ -99,6 +99,52 @@ def test_remove_unknown_alias_raises_registry_error(
         registry.remove("does-not-exist")
 
 
+def _excluding_registry(tmp_path: Path) -> ConnectionRegistry:
+    path = _write_registry(
+        tmp_path,
+        """
+        [databases.main]
+        url = "sqlite://"
+        exclude_tables = ["Secrets", "billing.invoices"]
+        """,
+    )
+    config = AppConfig(config_file=path)
+    return ConnectionRegistry.from_config(config)
+
+
+def test_is_excluded_bare_name_matches_any_schema(tmp_path: Path) -> None:
+    """A bare denylist name excludes that table in every schema."""
+    registry = _excluding_registry(tmp_path)
+
+    assert registry.is_excluded("main", "secrets") is True
+    assert registry.is_excluded("main", "secrets", schema="public") is True
+
+
+def test_is_excluded_is_case_insensitive(tmp_path: Path) -> None:
+    """Denylist matching ignores case."""
+    registry = _excluding_registry(tmp_path)
+
+    assert registry.is_excluded("main", "SECRETS") is True
+
+
+def test_is_excluded_qualified_name_is_schema_specific(
+    tmp_path: Path,
+) -> None:
+    """A schema-qualified denylist name only excludes that schema's table."""
+    registry = _excluding_registry(tmp_path)
+
+    assert registry.is_excluded("main", "invoices", schema="billing") is True
+    assert registry.is_excluded("main", "invoices", schema="sales") is False
+    assert registry.is_excluded("main", "invoices") is False
+
+
+def test_is_excluded_false_without_denylist(
+    registry: ConnectionRegistry,
+) -> None:
+    """A database with no denylist excludes nothing."""
+    assert registry.is_excluded("main", "anything") is False
+
+
 def test_credential_isolation_across_registry_surface(
     registry: ConnectionRegistry,
 ) -> None:

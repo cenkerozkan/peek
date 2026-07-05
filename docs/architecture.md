@@ -28,8 +28,9 @@ All tools are read-only and take a DB alias param (multi-database):
 
 - `list_databases()` — discover configured aliases (+ safe metadata like dialect).
 - `list_tables(db)` — list tables in a database.
-- `get_schema(db, ...)` — return schema (DDL/columns) for tables; supports plain
-  pagination/filter params for large schemas.
+- `get_schema(db, ...)` — return structured columns (plus primary/foreign keys)
+  for tables; scope large schemas with an explicit table selector or
+  `limit`/`offset` pagination.
 - `validate_sql(db, sql)` — parse-check a statement (is it a safe, read-only SELECT?)
   without running it.
 - `run_sql(db, sql)` — validate then execute a read-only query; return rows (capped).
@@ -83,6 +84,19 @@ The read-only enforcement (SQL parse check rejecting non-SELECT) lives inside
 through `sql_service`.** It is impossible to execute SQL without passing the check.
 Combined with a read-only DB role, that's the two-layer safety model.
 
+### Table exclusion (third safety layer)
+
+Each alias may declare a per-database `exclude_tables` denylist (see decision
+#16). `is_excluded(alias, table)` on the connection registry is the single source
+of truth both `schema_service` and `sql_service` consult. An excluded table's
+**name/identity is never model-facing**: it is omitted from `list_tables`,
+rejected by `get_schema` (as if it does not exist), scrubbed from other tables'
+foreign keys, and rejected at execution. The **fact** that tables were withheld
+*is* disclosed, though — `list_tables`/`get_schema` return a `hidden_count` — so
+the agent can tell a user that relevant data may be out of reach (and that a
+human might need to grant access) instead of silently answering from a partial
+picture.
+
 ## Multi-database
 
 - Connections configured via **connection strings** (SQLAlchemy URLs), loaded as
@@ -109,8 +123,11 @@ Combined with a read-only DB role, that's the two-layer safety model.
   connections. `register_database` / `remove_database` are not MCP tools. The only
   registry tool exposed is **`list_databases`** (read-only).
 - **Future-proofing:** add/remove logic lives in `services/connection_registry.py`
-  behind a clean interface, so a later non-model **admin CLI** (`peek db add/remove`)
-  can reuse it. Not built now.
+  behind a clean interface, so a later non-model **admin CLI**
+  (`peek db add/remove/list`) can reuse it. The CLI is a human tool (never an MCP
+  tool), writes credentials only to the local config file, and requires an MCP-server
+  **restart to take effect** — no live reload in v1. Not built now. See
+  `decisions.md` #7a.
 - **Cross-platform paths:** any default/derived config location is resolved with
   `platformdirs` (`user_config_dir("peek")`) — OS-correct on Windows/macOS/Linux —
   and all path handling uses `pathlib.Path`. (Most users are on Windows/macOS.)

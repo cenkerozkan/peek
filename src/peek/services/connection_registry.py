@@ -9,7 +9,7 @@ string.
 class; they are intentionally not wired to any MCP tool.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional
 
 from sqlalchemy import Engine
 
@@ -25,6 +25,7 @@ class ConnectionRegistry:
 
     def __init__(self) -> None:
         self._engines: Dict[str, Engine] = {}
+        self._exclusions: Dict[str, FrozenSet[str]] = {}
 
     @classmethod
     def from_config(cls, config: AppConfig) -> "ConnectionRegistry":
@@ -73,6 +74,11 @@ class ConnectionRegistry:
                 f"Could not connect to database: {alias}"
             ) from error
         self._engines[alias] = engine
+        self._exclusions[alias] = frozenset(
+            name.strip().lower()
+            for name in entry.exclude_tables
+            if name.strip()
+        )
 
     def remove(self, alias: str) -> None:
         """Dispose of and forget the engine registered for ``alias``.
@@ -86,6 +92,7 @@ class ConnectionRegistry:
         engine = self._engines.pop(alias, None)
         if engine is None:
             raise RegistryError(f"Unknown database alias: {alias}")
+        self._exclusions.pop(alias, None)
         engine.dispose()
 
     def aliases(self) -> List[str]:
@@ -108,6 +115,35 @@ class ConnectionRegistry:
             return self._engines[alias]
         except KeyError as error:
             raise RegistryError(f"Unknown database alias: {alias}") from error
+
+    def is_excluded(
+        self, alias: str, table: str, schema: Optional[str] = None
+    ) -> bool:
+        """Return whether ``table`` is on ``alias``'s denylist.
+
+        Matching is case-insensitive. A bare denylist name matches ``table``
+        in any schema; a ``schema.table`` denylist name matches only when
+        ``schema`` is supplied and equal. This is the single source of truth
+        the schema and SQL services consult, so an excluded table is never
+        revealed or queried.
+
+        Args:
+            alias: The database alias whose denylist to consult.
+            table: The unqualified table name to test.
+            schema: The namespace ``table`` lives in, if any.
+
+        Returns:
+            ``True`` if the table is excluded, ``False`` otherwise (including
+            for an unregistered alias, which is rejected earlier by
+            ``get_engine``).
+        """
+        patterns = self._exclusions.get(alias, frozenset())
+        if not patterns:
+            return False
+        candidates = {table.lower()}
+        if schema is not None:
+            candidates.add(f"{schema.lower()}.{table.lower()}")
+        return bool(candidates & patterns)
 
     def describe(self, alias: str) -> Dict[str, str]:
         """Return safe, credential-free metadata for ``alias``.
@@ -134,3 +170,4 @@ class ConnectionRegistry:
         for engine in self._engines.values():
             engine.dispose()
         self._engines.clear()
+        self._exclusions.clear()
