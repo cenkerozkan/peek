@@ -82,9 +82,11 @@ exclusion-aware from the start.
 - [x] `services/schema_service.py` — over a registry engine (SQLAlchemy `inspect`):
       `list_tables(alias)` and `get_schema(alias, ...)` with pagination/filtering.
       No credentials in returns or errors.
-- [x] **Honor the denylist (Phase 3):** excluded tables are omitted from
+- [x] **Honor the denylist (Phase 3):** excluded table *names* are omitted from
       `list_tables`, rejected by `get_schema` (as if nonexistent), and scrubbed
-      from other tables' foreign keys — an excluded table is fully invisible.
+      from other tables' foreign keys; `list_tables`/`get_schema` return a
+      `hidden_count` so the agent knows tables were withheld without learning
+      their names (decision #16).
 - [x] `models/schema.py` — Pydantic I/O types for table lists and schema results.
 - [x] Tests against a SQLite fixture with a couple of tables, incl. a case proving
       an excluded table never appears in any output.

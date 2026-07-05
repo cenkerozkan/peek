@@ -87,11 +87,15 @@ Combined with a read-only DB role, that's the two-layer safety model.
 ### Table exclusion (third safety layer)
 
 Each alias may declare a per-database `exclude_tables` denylist (see decision
-#16). It is **not model-facing**: `is_excluded(alias, table)` on the connection
-registry is the single source of truth both `schema_service` and `sql_service`
-consult. Excluded tables are omitted from `list_tables`, rejected by `get_schema`
-(as if they do not exist), scrubbed from other tables' foreign keys, and rejected
-at execution — so an excluded table's very existence never reaches the model.
+#16). `is_excluded(alias, table)` on the connection registry is the single source
+of truth both `schema_service` and `sql_service` consult. An excluded table's
+**name/identity is never model-facing**: it is omitted from `list_tables`,
+rejected by `get_schema` (as if it does not exist), scrubbed from other tables'
+foreign keys, and rejected at execution. The **fact** that tables were withheld
+*is* disclosed, though — `list_tables`/`get_schema` return a `hidden_count` — so
+the agent can tell a user that relevant data may be out of reach (and that a
+human might need to grant access) instead of silently answering from a partial
+picture.
 
 ## Multi-database
 

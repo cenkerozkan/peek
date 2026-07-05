@@ -260,26 +260,35 @@ denylist of tables that must never reach any LLM's context, orthogonal to the
 read-only guard. Matching is **exact and case-insensitive**: a bare name
 (`secrets`) excludes that table in any schema; a qualified name
 (`billing.invoices`) excludes only that schema's table. No glob/wildcard
-patterns in v1. The denylist is **not model-facing** — a single
-`is_excluded(alias, table)` accessor on the connection registry is the one
-source of truth. Effects: excluded tables are omitted from `list_tables`,
-rejected by `get_schema` as if nonexistent, scrubbed from other tables' foreign
-keys, and (from Phase 5) rejected at execution. Excluded names never appear in
-`describe`/`list_metadata` either, so their existence is never revealed.
+patterns in v1. A single `is_excluded(alias, table)` accessor on the connection
+registry is the one source of truth. An excluded table's **name is never
+model-facing**: it is omitted from `list_tables`, rejected by `get_schema` as if
+nonexistent, scrubbed from other tables' foreign keys, and (from Phase 5)
+rejected at execution; excluded names never appear in `describe`/`list_metadata`
+either. The **fact** that tables were withheld is disclosed, though —
+`list_tables`/`get_schema` carry a `hidden_count` (a count, never names) — so the
+agent can tell a user that relevant data is out of reach and a human may need to
+grant access, rather than answering confidently from a partial schema.
 
 - **Alternatives rejected:** (a) glob/wildcard patterns — deferred; a broad
   pattern can hide more than intended, and exact names are predictable and
   simpler to test (revive if real denylists prove verbose); (b) case-sensitive
   matching — SQL identifiers are usually case-insensitive, so a case-sensitive
-  denylist would silently miss `Secrets` vs `secrets`; (c) surfacing the denylist
-  in model-facing metadata — would reveal that hidden tables exist; (d) hiding
-  only from `list_tables` — an excluded name would still leak via another table's
-  foreign key or an explicit `get_schema`/query, so exclusion is enforced at
-  every read surface.
+  denylist would silently miss `Secrets` vs `secrets` and leak (matching is
+  comparison-only; real names are always returned in their true casing);
+  (c) disclosing excluded *names* to the agent — would defeat hiding a table
+  whose very existence is confidential; (d) hiding the count too (total silence)
+  — leaves the agent unable to tell it is working from a partial picture, so it
+  may answer wrongly instead of flagging the gap; (e) hiding only from
+  `list_tables` — an excluded name would still leak via another table's foreign
+  key or an explicit `get_schema`/query, so exclusion is enforced at every read
+  surface.
 - **Why:** environments (prod/uat/dev) contain tables that must stay invisible
-  regardless of read-only access; a config-driven, not-model-facing denylist with
-  one accessor keeps every service consistent and makes "invisible means
-  invisible" a structural property rather than a per-caller courtesy.
+  regardless of read-only access; a config-driven denylist with one accessor
+  keeps every service consistent and makes "the name is invisible" a structural
+  property. Disclosing only a count threads the needle: the identity stays secret
+  while the agent still knows to ask a human when a question may need withheld
+  data.
 
 ---
 

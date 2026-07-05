@@ -20,3 +20,11 @@ class RegistryError(PeekError):
 
     The message names only the database alias, never the connection string.
     """
+
+
+class SchemaError(PeekError):
+    """Raised when a database's schema cannot be introspected.
+
+    The message names only the database alias (and table, if relevant),
+    never the connection string.
+    """
