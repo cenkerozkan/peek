@@ -117,22 +117,31 @@ exclusion-aware from the start.
       naming an excluded table is rejected, that the row cap and truncation flag
       work, and that errors are credential-safe.
 
-## Phase 6 — MCP tool layer (thin) ⬜
+## Phase 6 — MCP tool layer (thin) ✅
 
-Thin FastMCP tools; docstrings are the agent-facing contract.
+Thin FastMCP tools; docstrings are the agent-facing contract. Tools reach the
+services through the `tools/context.py` dependency seam (`AppContext` +
+`app_context()`), which the Phase 7 lifespan will populate.
 
-- [ ] `tools/databases.py` — `list_databases()` (aliases + safe metadata only; no
+- [x] `tools/databases.py` — `list_databases()` (aliases + safe metadata only; no
       register/remove).
-- [ ] `tools/schema.py` — `list_tables(db)`, `get_schema(db, ...)`.
-- [ ] `tools/sql.py` — `validate_sql(db, sql)`, `run_sql(db, sql)`.
-- [ ] Each tool: validate params, call a service, shape a structured/actionable
-      (credential-safe) response. No business logic in tool bodies.
-- [ ] Tests asserting the tool contracts and error shaping.
+- [x] `tools/schema.py` — `list_tables(db)`, `get_schema(db, ...)`.
+- [x] `tools/sql.py` — `validate_sql(db, sql)`, `run_sql(db, sql)`.
+- [x] Each tool: validate params, call a service, shape a structured/actionable
+      (credential-safe) response. No business logic in tool bodies. `validate_sql`
+      returns a `ValidationResult` verdict; the others raise `ToolError` with the
+      credential-safe service message.
+- [x] Tests asserting the tool contracts and error shaping.
 
 ## Phase 7 — Server wiring & lifecycle ⬜
 
-- [ ] `server.py` — FastMCP entry: lifespan builds the `ConnectionRegistry` once,
-      injects it into tools/services, disposes on shutdown. Stdio transport.
+- [ ] `server.py` — FastMCP entry: lifespan builds the `ConnectionRegistry` and
+      services once, yields an `AppContext` under `tools.context.APP_CONTEXT_KEY`
+      (the Phase 6 seam), calls `tools.register(mcp)`, disposes on shutdown. Stdio
+      transport.
+- [ ] Construct the server with `FastMCP(..., mask_error_details=True)` so any
+      unexpected (non-`ToolError`) exception is masked from the client — the second
+      half of the credential-isolation guarantee the Phase 6 tools rely on.
 - [ ] Console entry point + `python -m` runnability.
 - [ ] Reconcile packaging with the `src.` import convention (a built wheel exposes
       top-level `peek`, not `src.peek`) — see `[[feedback-src-prefixed-imports]]`.
