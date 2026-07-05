@@ -16,6 +16,7 @@ from sqlalchemy import Engine
 from src.peek.config import AppConfig
 from src.peek.errors import RegistryError
 from src.peek.infra.config_file import load_registry
+from src.peek.infra.dialects import to_sqlglot_dialect
 from src.peek.infra.engines import build_engine
 from src.peek.models.config import DatabaseEntry
 
@@ -26,6 +27,7 @@ class ConnectionRegistry:
     def __init__(self) -> None:
         self._engines: Dict[str, Engine] = {}
         self._exclusions: Dict[str, FrozenSet[str]] = {}
+        self._dialects: Dict[str, Optional[str]] = {}
 
     @classmethod
     def from_config(cls, config: AppConfig) -> "ConnectionRegistry":
@@ -79,6 +81,9 @@ class ConnectionRegistry:
             for name in entry.exclude_tables
             if name.strip()
         )
+        self._dialects[alias] = entry.dialect or to_sqlglot_dialect(
+            engine.dialect.name
+        )
 
     def remove(self, alias: str) -> None:
         """Dispose of and forget the engine registered for ``alias``.
@@ -93,6 +98,7 @@ class ConnectionRegistry:
         if engine is None:
             raise RegistryError(f"Unknown database alias: {alias}")
         self._exclusions.pop(alias, None)
+        self._dialects.pop(alias, None)
         engine.dispose()
 
     def aliases(self) -> List[str]:
@@ -113,6 +119,28 @@ class ConnectionRegistry:
         """
         try:
             return self._engines[alias]
+        except KeyError as error:
+            raise RegistryError(f"Unknown database alias: {alias}") from error
+
+    def sqlglot_dialect(self, alias: str) -> Optional[str]:
+        """Return the ``sqlglot`` dialect to parse ``alias``'s queries with.
+
+        This is the ``DatabaseEntry.dialect`` override when one was
+        configured, otherwise the translation of the engine's SQLAlchemy
+        dialect name. It is ``None`` when the backend has no known mapping, in
+        which case the guard parses with its generic dialect.
+
+        Args:
+            alias: The database alias to resolve.
+
+        Returns:
+            The ``sqlglot`` dialect name, or ``None`` for the generic dialect.
+
+        Raises:
+            RegistryError: If ``alias`` is not registered.
+        """
+        try:
+            return self._dialects[alias]
         except KeyError as error:
             raise RegistryError(f"Unknown database alias: {alias}") from error
 
@@ -171,3 +199,4 @@ class ConnectionRegistry:
             engine.dispose()
         self._engines.clear()
         self._exclusions.clear()
+        self._dialects.clear()

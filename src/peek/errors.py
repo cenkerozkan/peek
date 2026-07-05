@@ -28,3 +28,11 @@ class SchemaError(PeekError):
     The message names only the database alias (and table, if relevant),
     never the connection string.
     """
+
+
+class QueryError(PeekError):
+    """Raised when a read-only query cannot be executed.
+
+    Wraps the underlying database error so the message names only the
+    database alias, never the connection string or SQL parameters.
+    """
