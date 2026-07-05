@@ -51,7 +51,7 @@ Get from a config file to validated, alias-addressed engines.
 
 ---
 
-## Phase 3 — Schema service (introspection) ⬜
+## Phase 3 — Schema service (introspection) 🚧
 
 - [ ] Resolve open question: `get_schema` output shape (structured columns vs DDL)
       and its pagination/filter params. *(Leaning: structured columns.)* Record the
@@ -96,12 +96,27 @@ Thin FastMCP tools; docstrings are the agent-facing contract.
 - [ ] Reconcile packaging with the `src.` import convention (a built wheel exposes
       top-level `peek`, not `src.peek`) — see `[[feedback-src-prefixed-imports]]`.
 
-## Phase 7 — End-to-end & docs ⬜
+## Phase 7 — Packaging & distribution ⬜
+
+Make peek installable as an isolated app. See `decisions.md` #14.
+
+- [ ] `[project.scripts] peek = "peek.server:main"` — console entry point (builds
+      on the Phase 6 entry-point work) so `uvx peek`, `pipx install peek`, and
+      `python -m peek` all resolve to a runnable command.
+- [ ] Verify `uvx peek` (primary) and `pipx install peek` (supported alternative)
+      both launch cleanly, including the driver-extra syntax
+      (`uvx --from 'peek[postgres]' peek`).
+- [ ] Confirm the entry point starts with no shell assumptions on Windows/macOS
+      (see decision #12).
+
+## Phase 8 — End-to-end & docs ⬜
 
 - [ ] Manual end-to-end: register a real DB alias, drive `list_databases` →
       `list_tables` → `get_schema` → `validate_sql` → `run_sql` from an MCP client.
 - [ ] Document the MCP launch config (config-file *path* only — never credentials)
-      and a sample `databases.toml`.
+      and a sample `databases.toml`. Lead the install/launch story with
+      `uvx peek` (`{"command": "uvx", "args": ["peek"]}`); note `pipx install peek`
+      as the alternative and the driver-extra syntax (see `decisions.md` #14).
 - [ ] Read-only DB role guidance (the second, independent safety layer).
 
 ---

@@ -3,13 +3,17 @@
 Lightweight ADR-style log: **what** we chose, **why**, and the alternatives we
 rejected. `architecture.md` describes the current design; this file records the
 reasoning so we (and future agents) don't re-litigate settled tradeoffs. Newest
-context at the bottom of each entry. All dates below: 2026-07-01.
+context at the bottom of each entry.
+
+Every decision header carries its **current status and the date** that status was
+set — e.g. `— Superseded (2026-07-01)`. When a decision's status changes, update
+the header (status + new date), don't just append a note in the body.
 
 Status legend: **Accepted** · **Provisional** (may change) · **Superseded**
 
 ---
 
-## 1. LangGraph for the query pipeline — Accepted
+## 1. LangGraph for the query pipeline — Superseded (2026-07-01)
 
 Generate SQL through an explicit LangGraph graph.
 
@@ -25,7 +29,7 @@ Generate SQL through an explicit LangGraph graph.
   outer agent does NL→SQL via the fine-grained tools. **Suspended, not killed** —
   revives with the human-facing TUI. See `backlog.md`.
 
-## 2. Safety: read-only DB role + client-side parse check — Accepted
+## 2. Safety: read-only DB role + client-side parse check — Accepted (2026-07-01)
 
 Two independent layers; both required.
 
@@ -36,7 +40,7 @@ Two independent layers; both required.
   a bypass of one layer is still caught by the other. The parse check lives in
   `sql_service` so every execution path passes it (see decision 8).
 
-## 3. Schema context: full dump, retrieval past a threshold — Superseded
+## 3. Schema context: full dump, retrieval past a threshold — Superseded (2026-07-01)
 
 Originally: dump the full schema into the internal prompt; switch to
 embedding-based retrieval of top-k relevant tables past ~100 tables.
@@ -46,7 +50,7 @@ embedding-based retrieval of top-k relevant tables past ~100 tables.
   pagination/filter params; the outer agent manages its own context. No embeddings,
   no vector store, no threshold. Suspended; see `backlog.md`.
 
-## 4. MCP server first; interactive TUI later — Accepted
+## 4. MCP server first; interactive TUI later — Accepted (2026-07-01)
 
 Ship the MCP server first. Add a human-facing interface later.
 
@@ -55,7 +59,7 @@ Ship the MCP server first. Add a human-facing interface later.
 - **Why:** the MCP-as-a-tool-for-other-agents use case is the central/novel one for
   this project. Originally planned CLI-first; user flipped it to MCP-first.
 
-## 5. Fine-grained MCP tools only (no coarse `ask_database`) — Accepted
+## 5. Fine-grained MCP tools only (no coarse `ask_database`) — Accepted (2026-07-01)
 
 - **Tools:** `list_databases`, `list_tables`, `get_schema`, `validate_sql`,
   `run_sql`. All read-only; each takes a DB alias.
@@ -64,7 +68,7 @@ Ship the MCP server first. Add a human-facing interface later.
   agent composes the fine-grained tools itself. Revised 2026-07-01 (dropped the
   coarse tool).
 
-## 6. Multi-database, one DB per request — Accepted
+## 6. Multi-database, one DB per request — Accepted (2026-07-01)
 
 The server connects to multiple databases at once, each addressed by alias. Every
 tool takes a DB target param.
@@ -75,7 +79,7 @@ tool takes a DB target param.
   from raw connection strings. Cross-DB joins are genuinely hard and unproven-needed;
   revisit only if a real requirement appears.
 
-## 7. Connection registry: config-driven at startup, not a runtime tool — Accepted
+## 7. Connection registry: config-driven at startup, not a runtime tool — Accepted (2026-07-01)
 
 Databases addressed by alias (like `psql` `.pg_service.conf` / DBeaver saved
 connections). The user maintains a **config file** mapping `alias -> connection
@@ -101,7 +105,7 @@ string`; the server reads and validates it at startup and builds the in-memory
 
   Supersedes the earlier plan (dynamic TinyDB registry managed via MCP tools).
 
-## 8. Layered architecture — Accepted
+## 8. Layered architecture — Accepted (2026-07-01)
 
 `MCP tools (thin) -> service layer -> infrastructure`.
 
@@ -114,7 +118,7 @@ string`; the server reads and validates it at startup and builds the in-memory
   tools and the LangGraph pipeline's nodes. The pipeline is gone (#1), but the
   layering stands on its own for keeping the safety chokepoint single.
 
-## 9. Transport: local stdio — Accepted (Provisional for remote)
+## 9. Transport: local stdio — Accepted (2026-07-01; Provisional for remote)
 
 Start with local stdio: the consuming agent launches the server as a subprocess.
 
@@ -122,7 +126,7 @@ Start with local stdio: the consuming agent launches the server as a subprocess.
   the core is coupled to stdio, so an HTTP transport (with auth) can be added later
   if a shared/remote deployment is needed.
 
-## 10. Credential isolation — Accepted (hard rule)
+## 10. Credential isolation — Accepted (2026-07-01; hard rule)
 
 No tool return value or error message may ever contain a connection string; the LLM
 sees only aliases.
@@ -133,13 +137,13 @@ sees only aliases.
   does. So: `list_databases` returns aliases only, SQLAlchemy errors are scrubbed of
   URLs, and credentials never go in a (committable) MCP launch config.
 
-## 11. FastMCP as the MCP framework — Accepted
+## 11. FastMCP as the MCP framework — Accepted (2026-07-01)
 
 - **Why:** batteries-included MCP server framework; reference docs vendored at
   `../llm_friendly_docs/fastmcp.txt`. Long-lived resources (the SQLAlchemy engines)
   are built once via its lifespan/context and injected, never per-call.
 
-## 12. Cross-platform: pathlib + platformdirs — Accepted
+## 12. Cross-platform: pathlib + platformdirs — Accepted (2026-07-01)
 
 All code must run on Windows and macOS (the company's actual platforms; Linux is
 rare).
@@ -149,7 +153,7 @@ rare).
   (`user_config_dir("peek")`) rather than a hardcoded `~/.config`, which is
   Linux-only.
 
-## 13. Database drivers as optional extras — Accepted
+## 13. Database drivers as optional extras — Accepted (2026-07-01)
 
 SQLAlchemy ships dialects (SQL generation) but not DBAPI drivers (the connectors).
 Each supported backend needs its driver installed; drivers are exposed as
@@ -170,6 +174,33 @@ Each supported backend needs its driver installed; drivers are exposed as
   install hint, never a credential leak.
 - **Note:** `pyodbc` (mssql) additionally requires the OS-level ODBC driver
   (e.g. Microsoft ODBC Driver for SQL Server); document per-OS setup when needed.
+
+## 14. Distribution: console entry point, `uvx`-first, pipx supported — Accepted (2026-07-05)
+
+peek is an **application, not a library** — nobody `import`s it; an outer agent
+launches it as a subprocess. That's the exact shape isolated-app installers
+(`uvx`, `pipx`) exist for: the app and its deps (fastmcp, sqlalchemy, drivers)
+live in their own environment and never collide with anything else on the machine.
+
+- **Prerequisite:** a console entry point — `[project.scripts] peek =
+  "peek.server:main"` — plus `python -m peek`. This one addition unblocks `uvx`,
+  `pipx`, and `python -m` simultaneously. (Tracked in the roadmap; ties to the
+  Phase 6 entry-point work.)
+- **Primary path — `uvx`:** we already use uv (`uv.lock` in the tree) and the MCP
+  ecosystem has standardized on `uvx` for launch configs. The MCP client config
+  becomes `{"command": "uvx", "args": ["peek"]}`. `uvx` runs the published version
+  in an ephemeral env — no explicit install/upgrade step, always current — which
+  fits the "outer agent spawns the server" model better than a persistent install.
+- **Supported alternative — pipx:** for users who want a persistent install
+  (`pipx install peek`). Costs nothing extra once the entry point exists, so we
+  document it as the secondary option rather than the lead.
+- **Driver extras are chosen at install/launch time** (see #13), same syntax for
+  both: `uvx --from 'peek[postgres]' peek` / `pipx install 'peek[postgres,mysql]'`.
+  Because drivers are opt-in, this must be documented prominently either way.
+- **Alternatives rejected:** (a) library-style `pip install peek` into a shared
+  environment — dependency collisions for what is an application, not a library;
+  (b) leading with pipx — an extra install/upgrade step versus `uvx`'s ephemeral,
+  always-latest run that matches our uv tooling and the ecosystem norm.
 
 ---
 
