@@ -6,9 +6,30 @@ other credential material. Rows are positional arrays aligned to ``columns`` so
 column names are not repeated for every row.
 """
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict
+
+
+class ValidationResult(BaseModel):
+    """The verdict on whether a query is a safe, read-only statement.
+
+    Returned by the ``validate_sql`` tool instead of raising, so an agent can
+    check a query before running it. ``message`` explains why an invalid query
+    was refused; it is credential-safe and never echoes the submitted SQL.
+
+    Attributes:
+        alias: The database alias the query was checked against.
+        valid: Whether the query is a single read-only ``SELECT`` that touches
+            no denied table.
+        message: The reason the query was refused, or ``None`` when valid.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    alias: str
+    valid: bool
+    message: Optional[str] = None
 
 
 class QueryResult(BaseModel):
