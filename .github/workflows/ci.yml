@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    # Windows and macOS are the platforms users actually run (decision #12), and
+    # the packaged entry point cannot be verified on Linux alone.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Lint
+        run: |
+          uv run ruff check src tests
+          uv run isort --check-only src tests
+
+      - name: Type check
+        run: uv run ty check src tests
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Build the wheel
+        run: uv build
+
+      - name: Install as an isolated app
+        run: uv tool install .
+
+      # The Phase 8 bullet that cannot be checked locally: the console script
+      # resolves and the server boots on this OS, with no shell assumptions.
+      # peek takes no CLI flags -- it serves MCP over stdio -- so the smoke test
+      # points it at a scratch registry and closes stdin: a clean startup and
+      # shutdown exits 0, while a broken entry point or bad packaging does not.
+      - name: Smoke-test the entry point
+        shell: bash
+        run: |
+          python -c "
+          import pathlib, sqlite3
+          db = pathlib.Path('smoke.db').resolve()
+          sqlite3.connect(db).execute('CREATE TABLE t (id INTEGER)')
+          pathlib.Path('smoke.toml').write_text(
+              '[databases.smoke]\nurl = \"sqlite:///%s\"\n' % db.as_posix())
+          "
+          PEEK_CONFIG_FILE=smoke.toml uv tool run --from peek-sql peek < /dev/null
+          PEEK_CONFIG_FILE=smoke.toml uv run python -m peek < /dev/null

@@ -19,7 +19,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` not started.
 - [x] Repo, `pyproject.toml`, `src`-layout, venv, pre-commit (ruff/isort/ty).
 - [x] Architecture/structure/decisions/conventions docs.
 - [x] `README.md`; `src` as a package; root `conftest.py` (repo root on
-      `sys.path`); absolute imports use the `src.` prefix.
+      `sys.path`); absolute imports use the `src.` prefix. *(Superseded in
+      Phase 7: the `src.` prefix was dropped — see below.)*
 
 ## Phase 1 — Safety guard ✅
 
@@ -133,41 +134,75 @@ services through the `tools/context.py` dependency seam (`AppContext` +
       credential-safe service message.
 - [x] Tests asserting the tool contracts and error shaping.
 
-## Phase 7 — Server wiring & lifecycle ⬜
+## Phase 7 — Server wiring & lifecycle ✅
 
-- [ ] `server.py` — FastMCP entry: lifespan builds the `ConnectionRegistry` and
+- [x] `server.py` — FastMCP entry: lifespan builds the `ConnectionRegistry` and
       services once, yields an `AppContext` under `tools.context.APP_CONTEXT_KEY`
       (the Phase 6 seam), calls `tools.register(mcp)`, disposes on shutdown. Stdio
       transport.
-- [ ] Construct the server with `FastMCP(..., mask_error_details=True)` so any
+- [x] Construct the server with `FastMCP(..., mask_error_details=True)` so any
       unexpected (non-`ToolError`) exception is masked from the client — the second
       half of the credential-isolation guarantee the Phase 6 tools rely on.
-- [ ] Console entry point + `python -m` runnability.
-- [ ] Reconcile packaging with the `src.` import convention (a built wheel exposes
-      top-level `peek`, not `src.peek`) — see `[[feedback-src-prefixed-imports]]`.
+- [x] Console entry point + `python -m` runnability (`src/peek/__main__.py`).
+- [x] Reconciled packaging with the `src.` import convention: the `src.` prefix is
+      **removed**. Absolute imports are `from peek.x import y`; `src/__init__.py` is
+      deleted; pytest gets the package root via `pythonpath = ["src"]` in
+      `pyproject.toml` instead of a root `conftest.py` `sys.path` shim. Tests import
+      `peek` exactly as an installed wheel does. `docs/conventions.md` and
+      `docs/structure.md` never documented the `src.` prefix as a rule, so no
+      correction was needed there.
+- [x] `tests/test_server.py` (9 tests): lifespan, `AppContext` publication, engine
+      disposal on both clean exit and mid-session exception, tool registration, and
+      `mask_error_details`.
 
-## Phase 8 — Packaging & distribution ⬜
+## Phase 8 — Packaging & distribution ✅ (publishing outstanding — see Phase 9)
 
-Make peek installable as an isolated app. See `decisions.md` #14.
+Make peek installable as an isolated app. See `decisions.md` #14 (amended
+2026-07-13 for the PyPI name conflict).
 
-- [ ] `[project.scripts] peek = "peek.server:main"` — console entry point (builds
-      on the Phase 7 entry-point work) so `uvx peek`, `pipx install peek`, and
+- [x] `[project.scripts] peek = "peek.server:main"` — console entry point (builds
+      on the Phase 7 entry-point work) so `uvx`, `pipx install`, and
       `python -m peek` all resolve to a runnable command.
-- [ ] Verify `uvx peek` (primary) and `pipx install peek` (supported alternative)
-      both launch cleanly, including the driver-extra syntax
-      (`uvx --from 'peek[postgres]' peek`).
-- [ ] Confirm the entry point starts with no shell assumptions on Windows/macOS
-      (see decision #12).
+- [x] **PyPI name conflict discovered and resolved.** `peek` and `peek-mcp` are
+      both already taken on PyPI by unrelated packages. The distribution name is
+      now `peek-sql`; the import package and console command stay `peek`. See
+      `decisions.md` #14.
+- [x] `pyproject.toml` PyPI metadata: `name = "peek-sql"`, `license = "MIT"` (+
+      license-files), authors, keywords, classifiers, `[project.urls]`.
+- [x] `server.py` `main()` pins `run(transport="stdio", show_banner=False)` —
+      stdout is the MCP channel, so the transport is explicit and the startup
+      banner (which goes to stderr) is suppressed rather than left to a framework
+      default.
+- [x] Verified locally (not yet published — see Phase 9) that `uv tool install .`,
+      `uvx --from . peek`, and `pipx install .` all launch cleanly, including the
+      `[postgres]` driver extra (psycopg 3.3.4 resolved into the tool env).
+      Confirmed the installed wheel serves all 5 tools over MCP stdio against a
+      scratch SQLite DB, and that `import peek` fails outside the tool env (it's an
+      isolated app, not an importable library on the path).
+- [x] First CI in the repo: `.github/workflows/ci.yml` — matrix over
+      ubuntu-latest/windows-latest/macos-latest, running ruff + isort + ty +
+      pytest, building the wheel, installing it as an isolated tool, and
+      smoke-testing that the `peek` console script boots. This is how the
+      Windows/macOS entry-point requirement (decision #12) is verified, since it
+      can't be checked on the Linux dev box. See `decisions.md` #18.
+- [ ] **Publish `peek-sql` 0.1.0 to PyPI and claim the name.** Not done — folded
+      into Phase 9 below. Until this happens, `uvx --from peek-sql peek` does not
+      work for anyone but us.
 
-## Phase 9 — End-to-end & docs ⬜
+## Phase 9 — End-to-end, publishing & docs ⬜
 
+- [ ] **Publish `peek-sql` 0.1.0 to PyPI**, claiming the distribution name (moved
+      up from Phase 8 — local install verification is done, the publish step is
+      not).
 - [ ] Manual end-to-end: register a real DB alias, drive `list_databases` →
       `list_tables` → `get_schema` → `validate_sql` → `run_sql` from an MCP client.
 - [ ] Document the MCP launch config (config-file *path* only — never credentials)
       and a sample `databases.toml`, including a per-alias `exclude_tables` example
       (Phase 3). Lead the install/launch story with
-      `uvx peek` (`{"command": "uvx", "args": ["peek"]}`); note `pipx install peek`
-      as the alternative and the driver-extra syntax (see `decisions.md` #14).
+      `uvx --from peek-sql peek`
+      (`{"command": "uvx", "args": ["--from", "peek-sql", "peek"]}`); note
+      `pipx install peek-sql` as the alternative and the driver-extra syntax (see
+      `decisions.md` #14).
 - [ ] Read-only DB role guidance (the second, independent safety layer).
 
 ---

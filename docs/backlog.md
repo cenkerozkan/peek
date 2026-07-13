@@ -48,6 +48,21 @@ exceeds ~100 tables, to keep the *internal* prompt small.
 - **Revival condition:** if the TUI's internal brain returns, or if `get_schema`
   output proves too large to hand to outer agents in practice.
 
+## No CLI argument handling (`peek --help` does nothing useful) — Suspended (2026-07-13)
+
+`peek` currently ignores argv entirely: it boots straight into the MCP stdio
+server regardless of what's passed on the command line. `peek --help` does not
+print help — it just tries to start the server and fails with a `ConfigError`
+if no registry file exists yet.
+
+- **Why deferred rather than fixed now:** discovered during Phase 8 packaging
+  verification; it's a UX rough edge, not a safety or correctness gap, and
+  wasn't blocking local install verification.
+- **Revival condition:** pick up as a follow-up once the packaging/publishing
+  work (`roadmap.md` Phase 9) lands — worth a minimal `--help`/`--version` at
+  least, since a confusing `ConfigError` on first run is a bad first impression
+  for a freshly-installed tool.
+
 ---
 
 ## Earlier superseded decisions (for reference)
