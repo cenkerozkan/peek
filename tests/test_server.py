@@ -34,15 +34,16 @@ EXPECTED_TOOLS = {
 def _write_registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create a SQLite database and point ``PEEK_CONFIG_FILE`` at its alias."""
     db_path = tmp_path / "app.db"
-    engine = create_engine(f"sqlite:///{db_path}")
+    # as_posix(): a Windows path's backslashes would be read as escape
+    # sequences inside the TOML basic string below.
+    url = f"sqlite:///{db_path.as_posix()}"
+    engine = create_engine(url)
     with engine.begin() as connection:
         connection.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
     engine.dispose()
 
     config_path = tmp_path / "databases.toml"
-    config_path.write_text(
-        f'[databases.main]\nurl = "sqlite:///{db_path}"\n'
-    )
+    config_path.write_text(f'[databases.main]\nurl = "{url}"\n')
     monkeypatch.setenv("PEEK_CONFIG_FILE", str(config_path))
     return config_path
 
