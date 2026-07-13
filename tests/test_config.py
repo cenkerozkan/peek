@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.peek.config import AppConfig
+from peek.config import AppConfig
 
 
 def test_default_resolved_config_file_ends_with_databases_toml() -> None:

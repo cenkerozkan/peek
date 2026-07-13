@@ -1,6 +1,6 @@
 """MCP tools for validating and running read-only SQL.
 
-Thin wrappers over :class:`~src.peek.services.sql_service`, the single safety
+Thin wrappers over :class:`~peek.services.sql_service`, the single safety
 chokepoint. ``validate_sql`` reports a verdict instead of raising, so an agent
 can check a query first; ``run_sql`` executes and returns capped rows. No SQL
 reaches a database except through the service.
@@ -9,10 +9,10 @@ reaches a database except through the service.
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 
-from src.peek.errors import PeekError
-from src.peek.models.query import QueryResult, ValidationResult
-from src.peek.safety.guard import UnsafeSQLError
-from src.peek.tools.context import app_context
+from peek.errors import PeekError
+from peek.models.query import QueryResult, ValidationResult
+from peek.safety.guard import UnsafeSQLError
+from peek.tools.context import app_context
 
 
 def validate_sql(db: str, ctx: Context, sql: str) -> ValidationResult:

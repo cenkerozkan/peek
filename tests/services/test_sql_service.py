@@ -6,11 +6,11 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlglot import exp
 
-from src.peek.config import AppConfig
-from src.peek.errors import QueryError
-from src.peek.safety.guard import UnsafeSQLError
-from src.peek.services.connection_registry import ConnectionRegistry
-from src.peek.services.sql_service import ExcludedTableError, SqlService
+from peek.config import AppConfig
+from peek.errors import QueryError
+from peek.safety.guard import UnsafeSQLError
+from peek.services.connection_registry import ConnectionRegistry
+from peek.services.sql_service import ExcludedTableError, SqlService
 
 
 def _make_database(tmp_path: Path, rows: int = 3) -> str:

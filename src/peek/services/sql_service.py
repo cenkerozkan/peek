@@ -20,10 +20,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlglot import exp
 
-from src.peek.errors import QueryError
-from src.peek.models.query import QueryResult
-from src.peek.safety.guard import UnsafeSQLError, ensure_read_only
-from src.peek.services.connection_registry import ConnectionRegistry
+from peek.errors import QueryError
+from peek.models.query import QueryResult
+from peek.safety.guard import UnsafeSQLError, ensure_read_only
+from peek.services.connection_registry import ConnectionRegistry
 
 
 class ExcludedTableError(UnsafeSQLError):

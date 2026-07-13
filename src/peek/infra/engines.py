@@ -7,8 +7,8 @@ message.
 
 from sqlalchemy import Engine, create_engine
 
-from src.peek.errors import RegistryError
-from src.peek.models.config import DatabaseEntry
+from peek.errors import RegistryError
+from peek.models.config import DatabaseEntry
 
 
 def build_engine(entry: DatabaseEntry) -> Engine:

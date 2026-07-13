@@ -40,6 +40,11 @@ dev = [
     "pytest==9.1.1",
 ]
 
+[project.scripts]
+# Console entry point: unblocks `uvx peek`, `pipx install peek`, and
+# `python -m peek` (see decisions.md #14).
+peek = "peek.server:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/peek"]
 
@@ -70,3 +75,6 @@ known_first_party = ["peek"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# src-layout: put the package root on the path so tests import `peek`
+# (not `src.peek`) exactly as an installed wheel would.
+pythonpath = ["src"]

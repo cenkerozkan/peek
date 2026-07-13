@@ -1,7 +1,7 @@
 """Pydantic model describing the result of a read-only query.
 
 This is the credential-free I/O type returned by
-:mod:`src.peek.services.sql_service`. It never carries a connection string or
+:mod:`peek.services.sql_service`. It never carries a connection string or
 other credential material. Rows are positional arrays aligned to ``columns`` so
 column names are not repeated for every row.
 """

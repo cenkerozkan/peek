@@ -1,6 +1,6 @@
 """MCP tools for read-only database schema introspection.
 
-Thin wrappers over :class:`~src.peek.services.schema_service`. They resolve an
+Thin wrappers over :class:`~peek.services.schema_service`. They resolve an
 alias, call the service, and return its credential-free models unchanged.
 Denylisted tables are never revealed -- that is enforced in the service.
 """
@@ -10,9 +10,9 @@ from typing import List, Optional
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 
-from src.peek.errors import PeekError
-from src.peek.models.schema import SchemaResult, TableList
-from src.peek.tools.context import app_context
+from peek.errors import PeekError
+from peek.models.schema import SchemaResult, TableList
+from peek.tools.context import app_context
 
 
 def list_tables(

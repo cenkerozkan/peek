@@ -1,7 +1,7 @@
 """Pydantic models describing introspected database schemas.
 
 These are the credential-free I/O types returned by
-:mod:`src.peek.services.schema_service`. They never carry a connection
+:mod:`peek.services.schema_service`. They never carry a connection
 string or other credential material.
 """
 

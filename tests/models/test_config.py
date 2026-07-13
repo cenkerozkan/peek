@@ -2,7 +2,7 @@
 
 from pydantic import SecretStr
 
-from src.peek.models.config import DatabaseEntry
+from peek.models.config import DatabaseEntry
 
 
 def test_repr_does_not_leak_password() -> None:

@@ -3,7 +3,7 @@
 import pytest
 from fastmcp.exceptions import ToolError
 
-from src.peek.tools.schema import get_schema, list_tables
+from peek.tools.schema import get_schema, list_tables
 from tests.tools.conftest import ToolEnv
 
 

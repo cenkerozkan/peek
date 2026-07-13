@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from src.peek.config import AppConfig
-from src.peek.errors import RegistryError
-from src.peek.services.connection_registry import ConnectionRegistry
+from peek.config import AppConfig
+from peek.errors import RegistryError
+from peek.services.connection_registry import ConnectionRegistry
 
 
 def _write_registry(tmp_path: Path, content: str) -> Path:

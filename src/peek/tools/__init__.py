@@ -7,7 +7,7 @@ with a single call.
 
 from fastmcp import FastMCP
 
-from src.peek.tools import databases, schema, sql
+from peek.tools import databases, schema, sql
 
 
 def register(mcp: FastMCP) -> None:

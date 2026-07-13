@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine, text
 
-from src.peek.config import AppConfig
-from src.peek.errors import RegistryError, SchemaError
-from src.peek.services.connection_registry import ConnectionRegistry
-from src.peek.services.schema_service import SchemaService
+from peek.config import AppConfig
+from peek.errors import RegistryError, SchemaError
+from peek.services.connection_registry import ConnectionRegistry
+from peek.services.schema_service import SchemaService
 
 
 def _make_database(tmp_path: Path) -> str:

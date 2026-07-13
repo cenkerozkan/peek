@@ -13,12 +13,12 @@ from typing import Dict, FrozenSet, List, Optional
 
 from sqlalchemy import Engine
 
-from src.peek.config import AppConfig
-from src.peek.errors import RegistryError
-from src.peek.infra.config_file import load_registry
-from src.peek.infra.dialects import to_sqlglot_dialect
-from src.peek.infra.engines import build_engine
-from src.peek.models.config import DatabaseEntry
+from peek.config import AppConfig
+from peek.errors import RegistryError
+from peek.infra.config_file import load_registry
+from peek.infra.dialects import to_sqlglot_dialect
+from peek.infra.engines import build_engine
+from peek.models.config import DatabaseEntry
 
 
 class ConnectionRegistry:

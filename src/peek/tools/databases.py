@@ -1,6 +1,6 @@
 """MCP tool for discovering the databases the server can reach.
 
-Thin wrapper over :class:`~src.peek.services.connection_registry`. Exposes only
+Thin wrapper over :class:`~peek.services.connection_registry`. Exposes only
 ``list_databases`` -- registering or removing a database is a startup/admin
 concern, never a model-facing tool.
 """
@@ -10,9 +10,9 @@ from typing import List
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 
-from src.peek.errors import PeekError
-from src.peek.models.database import DatabaseInfo
-from src.peek.tools.context import app_context
+from peek.errors import PeekError
+from peek.models.database import DatabaseInfo
+from peek.tools.context import app_context
 
 
 def list_databases(ctx: Context) -> List[DatabaseInfo]:

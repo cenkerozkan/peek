@@ -10,7 +10,7 @@ from typing import Optional
 import pytest
 from sqlglot import exp
 
-from src.peek.safety.guard import UnsafeSQLError, ensure_read_only
+from peek.safety.guard import UnsafeSQLError, ensure_read_only
 
 READ_ONLY_QUERIES = [
     "SELECT 1",

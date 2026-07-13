@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from src.peek.errors import ConfigError
-from src.peek.infra.config_file import load_registry
+from peek.errors import ConfigError
+from peek.infra.config_file import load_registry
 
 VALID_TOML = """
 [databases.psql]

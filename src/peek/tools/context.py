@@ -11,9 +11,9 @@ from dataclasses import dataclass
 
 from fastmcp import Context
 
-from src.peek.services.connection_registry import ConnectionRegistry
-from src.peek.services.schema_service import SchemaService
-from src.peek.services.sql_service import SqlService
+from peek.services.connection_registry import ConnectionRegistry
+from peek.services.schema_service import SchemaService
+from peek.services.sql_service import SqlService
 
 APP_CONTEXT_KEY = "app"
 

@@ -1,7 +1,7 @@
 """Read-only schema introspection over registered database engines.
 
 Resolves an alias to its validated engine via the
-:class:`~src.peek.services.connection_registry.ConnectionRegistry` and reads
+:class:`~peek.services.connection_registry.ConnectionRegistry` and reads
 structure with SQLAlchemy's inspector. No SQL is executed here, so this does
 not route through the safety guard; it still obeys credential isolation --
 connection strings never appear in a return value or an error message (see
@@ -14,8 +14,8 @@ from sqlalchemy import inspect
 from sqlalchemy.engine import Inspector
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.peek.errors import SchemaError
-from src.peek.models.schema import (
+from peek.errors import SchemaError
+from peek.models.schema import (
     Column,
     ForeignKey,
     Kind,
@@ -24,7 +24,7 @@ from src.peek.models.schema import (
     TableList,
     TableSchema,
 )
-from src.peek.services.connection_registry import ConnectionRegistry
+from peek.services.connection_registry import ConnectionRegistry
 
 
 class SchemaService:

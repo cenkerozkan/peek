@@ -3,8 +3,8 @@
 import pytest
 from fastmcp.exceptions import ToolError
 
-from src.peek.models.query import QueryResult, ValidationResult
-from src.peek.tools.sql import run_sql, validate_sql
+from peek.models.query import QueryResult, ValidationResult
+from peek.tools.sql import run_sql, validate_sql
 from tests.tools.conftest import ToolEnv
 
 

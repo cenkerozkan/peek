@@ -1,7 +1,7 @@
 """Tests for the ``list_databases`` tool."""
 
-from src.peek.models.database import DatabaseInfo
-from src.peek.tools.databases import list_databases
+from peek.models.database import DatabaseInfo
+from peek.tools.databases import list_databases
 from tests.tools.conftest import ToolEnv
 
 

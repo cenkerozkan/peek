@@ -14,11 +14,11 @@ import pytest
 from fastmcp import Context
 from sqlalchemy import create_engine, text
 
-from src.peek.config import AppConfig
-from src.peek.services.connection_registry import ConnectionRegistry
-from src.peek.services.schema_service import SchemaService
-from src.peek.services.sql_service import SqlService
-from src.peek.tools.context import APP_CONTEXT_KEY, AppContext
+from peek.config import AppConfig
+from peek.services.connection_registry import ConnectionRegistry
+from peek.services.schema_service import SchemaService
+from peek.services.sql_service import SqlService
+from peek.tools.context import APP_CONTEXT_KEY, AppContext
 
 
 @dataclass(frozen=True)
