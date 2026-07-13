@@ -46,6 +46,10 @@ all-drivers = [
     "oracledb",
 ]
 
+[dependency-groups]
+# A PEP 735 group, not an extra: uv installs it by default (`uv run`, `uv sync`),
+# whereas an extra needs an explicit `--extra dev` and so is missing in CI. It is
+# also not published, so `pip install peek-sql[dev]` can't hand users our linters.
 dev = [
     "ruff==0.15.20",
     "isort==8.0.1",
