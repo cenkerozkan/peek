@@ -782,13 +782,6 @@ all-drivers = [
     { name = "pymysql" },
     { name = "pyodbc" },
 ]
-dev = [
-    { name = "isort" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "ty" },
-]
 mssql = [
     { name = "pyodbc" },
 ]
@@ -802,14 +795,21 @@ postgres = [
     { name = "psycopg", extra = ["binary"] },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "isort" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fastmcp" },
-    { name = "isort", marker = "extra == 'dev'", specifier = "==8.0.1" },
     { name = "oracledb", marker = "extra == 'all-drivers'" },
     { name = "oracledb", marker = "extra == 'oracle'" },
     { name = "platformdirs" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.6.0" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'all-drivers'" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'" },
     { name = "pydantic" },
@@ -818,13 +818,19 @@ requires-dist = [
     { name = "pymysql", marker = "extra == 'mysql'" },
     { name = "pyodbc", marker = "extra == 'all-drivers'" },
     { name = "pyodbc", marker = "extra == 'mssql'" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.20" },
     { name = "sqlalchemy" },
     { name = "sqlglot" },
-    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.56" },
 ]
-provides-extras = ["postgres", "mysql", "mssql", "oracle", "all-drivers", "dev"]
+provides-extras = ["postgres", "mysql", "mssql", "oracle", "all-drivers"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "isort", specifier = "==8.0.1" },
+    { name = "pre-commit", specifier = "==4.6.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "ruff", specifier = "==0.15.20" },
+    { name = "ty", specifier = "==0.0.56" },
+]
 
 [[package]]
 name = "platformdirs"

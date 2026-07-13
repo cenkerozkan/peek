@@ -56,5 +56,8 @@ jobs:
           pathlib.Path('smoke.toml').write_text(
               '[databases.smoke]\nurl = \"sqlite:///%s\"\n' % db.as_posix())
           "
-          PEEK_CONFIG_FILE=smoke.toml uv tool run --from peek-sql peek < /dev/null
+          # Resolve the tool from the local path, not `--from peek-sql`: uvx
+          # resolves a named package from the registry rather than reusing the
+          # tool installed above, and peek-sql is not published yet.
+          PEEK_CONFIG_FILE=smoke.toml uv tool run --from . peek < /dev/null
           PEEK_CONFIG_FILE=smoke.toml uv run python -m peek < /dev/null
