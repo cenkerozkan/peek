@@ -15,7 +15,9 @@ from peek.services.sql_service import ExcludedTableError, SqlService
 
 def _make_database(tmp_path: Path, rows: int = 3) -> str:
     db_path = tmp_path / "app.db"
-    url = f"sqlite:///{db_path}"
+    # as_posix(): a Windows path's backslashes would be read as escape
+    # sequences inside the TOML basic string this url is written into.
+    url = f"sqlite:///{db_path.as_posix()}"
     engine = create_engine(url)
     with engine.begin() as connection:
         connection.execute(
