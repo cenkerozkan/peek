@@ -10,28 +10,34 @@ Status markers: **✓** exists · **(planned)** not written yet.
 
 ```
 peek/
-├── pyproject.toml              ✓ deps + build config (hatchling)
+├── pyproject.toml              ✓ deps + build config (hatchling); console entry point
 ├── README.md                   ✓
 ├── CLAUDE.md · BRAINSTORM.md · docs/ · llm_friendly_docs/   ✓
+├── .github/workflows/ci.yml    ✓ lint/type/test + wheel build + entry-point smoke test
+│                                  #   on ubuntu/windows/macos (decisions.md #18)
 ├── src/
 │   └── peek/
 │       ├── __init__.py         ✓
+│       ├── __main__.py         ✓ `python -m peek` entry
 │       ├── config.py           ✓ AppConfig (pydantic-settings, PEEK_* env);
 │       │                       #   resolves config-file path via platformdirs; max_rows cap
 │       ├── errors.py           ✓ exception hierarchy (PeekError base: ConfigError,
 │       │                       #   RegistryError, …); messages never carry credentials
-│       ├── server.py           (planned) FastMCP entry: lifespan, wires tools → services
+│       ├── server.py           ✓ FastMCP entry: lifespan builds registry + services once,
+│       │                       #   yields AppContext, disposes engines on shutdown;
+│       │                       #   `main()` runs stdio, `show_banner=False`
 │       │
 │       ├── tools/              # ── MCP TOOL LAYER (thin, agent-facing) ──
-│       │   ├── schema.py       (planned) list_tables, get_schema
-│       │   ├── sql.py          (planned) run_sql, validate_sql
-│       │   └── databases.py    (planned) list_databases (read-only; NO register/remove)
+│       │   ├── context.py      ✓ AppContext + app_context() dependency seam
+│       │   ├── schema.py       ✓ list_tables, get_schema
+│       │   ├── sql.py          ✓ run_sql, validate_sql
+│       │   └── databases.py    ✓ list_databases (read-only; NO register/remove)
 │       │
 │       ├── services/           # ── SERVICE LAYER (all business logic) ──
-│       │   ├── connection_registry.py   (planned) load/validate connections at startup;
+│       │   ├── connection_registry.py   ✓ load/validate connections at startup;
 │       │   │                            #   add/remove logic behind iface for future CLI
-│       │   ├── schema_service.py        (planned) introspection: list tables, get schema
-│       │   └── sql_service.py  (planned) validate (read-only check) + execute ← chokepoint
+│       │   ├── schema_service.py        ✓ introspection: list tables, get schema
+│       │   └── sql_service.py  ✓ validate (read-only check) + execute ← chokepoint
 │       │
 │       ├── safety/
 │       │   └── guard.py        ✓ sqlglot read-only parse check: ensure_read_only()
@@ -39,13 +45,15 @@ peek/
 │       │
 │       ├── infra/              # ── INFRASTRUCTURE (long-lived resources) ──
 │       │   ├── config_file.py  ✓ read/parse the user's alias → conn-string TOML file
-│       │   └── engines.py      (planned) build/cache SQLAlchemy engines from conn strings
+│       │   ├── engines.py      ✓ build SQLAlchemy engines from conn strings
+│       │   └── dialects.py     ✓ SQLAlchemy dialect name → sqlglot dialect name
 │       │
 │       └── models/             #    Pydantic schemas
-│           └── config.py       ✓ DatabaseEntry (url as SecretStr — never leaks in repr/logs)
-└── tests/                      #    mirrors src/peek/
-    └── safety/
-        └── test_guard.py       ✓ proves non-SELECT / mutating statements are rejected
+│           ├── config.py       ✓ DatabaseEntry (url as SecretStr — never leaks in repr/logs)
+│           ├── schema.py       ✓ table-list / get_schema I/O types
+│           └── query.py        ✓ QueryResult
+└── tests/                      #    mirrors src/peek/; imports `peek` via
+                                 #    pytest's `pythonpath = ["src"]`, no `src.` prefix
 ```
 
 Deferred modules (would return with the suspended internal pipeline — see

@@ -204,7 +204,7 @@ Each supported backend needs its driver installed; drivers are exposed as
 - **Note:** `pyodbc` (mssql) additionally requires the OS-level ODBC driver
   (e.g. Microsoft ODBC Driver for SQL Server); document per-OS setup when needed.
 
-## 14. Distribution: console entry point, `uvx`-first, pipx supported — Accepted (2026-07-05)
+## 14. Distribution: console entry point, `uvx`-first, pipx supported — Accepted (2026-07-05; amended 2026-07-13)
 
 peek is an **application, not a library** — nobody `import`s it; an outer agent
 launches it as a subprocess. That's the exact shape isolated-app installers
@@ -216,20 +216,42 @@ live in their own environment and never collide with anything else on the machin
   `pipx`, and `python -m` simultaneously. (Tracked in the roadmap; ties to the
   Phase 7 entry-point work.)
 - **Primary path — `uvx`:** we already use uv (`uv.lock` in the tree) and the MCP
-  ecosystem has standardized on `uvx` for launch configs. The MCP client config
-  becomes `{"command": "uvx", "args": ["peek"]}`. `uvx` runs the published version
-  in an ephemeral env — no explicit install/upgrade step, always current — which
-  fits the "outer agent spawns the server" model better than a persistent install.
-- **Supported alternative — pipx:** for users who want a persistent install
-  (`pipx install peek`). Costs nothing extra once the entry point exists, so we
-  document it as the secondary option rather than the lead.
-- **Driver extras are chosen at install/launch time** (see #13), same syntax for
-  both: `uvx --from 'peek[postgres]' peek` / `pipx install 'peek[postgres,mysql]'`.
-  Because drivers are opt-in, this must be documented prominently either way.
-- **Alternatives rejected:** (a) library-style `pip install peek` into a shared
+  ecosystem has standardized on `uvx` for launch configs. `uvx` runs the published
+  version in an ephemeral env — no explicit install/upgrade step, always current —
+  which fits the "outer agent spawns the server" model better than a persistent
+  install.
+- **Supported alternative — pipx:** for users who want a persistent install.
+  Costs nothing extra once the entry point exists, so we document it as the
+  secondary option rather than the lead.
+- **Driver extras are chosen at install/launch time** (see #13). Because drivers
+  are opt-in, this must be documented prominently either way.
+- **Alternatives rejected:** (a) library-style `pip install` into a shared
   environment — dependency collisions for what is an application, not a library;
   (b) leading with pipx — an extra install/upgrade step versus `uvx`'s ephemeral,
   always-latest run that matches our uv tooling and the ecosystem norm.
+
+### 14a. Amendment — PyPI name conflict: distribution renamed to `peek-sql` (2026-07-13)
+
+While doing the Phase 8 packaging work, we checked PyPI directly and found the
+launch config above cannot work as written: **`peek` is already an unrelated
+package** (David Cramer, v0.1.0), and **`peek-mcp` is also taken** — by an
+active, unrelated MCP server (a UI-annotation tool, v0.5.16). `uvx --from peek
+peek` or `uvx --from peek-mcp peek` would install a stranger's package.
+
+- **Resolution:** the **PyPI distribution name is now `peek-sql`**. The import
+  package stays `peek` (`import peek`) and the console command stays `peek` — only
+  the name used to install it changes. No application code changed.
+- **Every documented invocation is corrected accordingly:**
+  - MCP launch config: `{"command": "uvx", "args": ["--from", "peek-sql", "peek"]}`
+  - With a driver extra: `uvx --from 'peek-sql[postgres]' peek`
+  - pipx: `pipx install peek-sql` / `pipx install 'peek-sql[postgres,mysql]'`
+  - `python -m peek` is unaffected (it never went through PyPI naming).
+- **Why a `-sql` suffix and not something else:** keeps the recognizable `peek`
+  name as the importable package and the command a user actually types day to
+  day; only the install-time identifier absorbs the collision.
+- **Status of publishing:** this decision only fixes the *name* to use once
+  published. As of this amendment, `peek-sql` has **not** been published to PyPI —
+  see `roadmap.md` Phase 9. `uvx --from peek-sql peek` does not work yet.
 
 ## 15. `get_schema` output: structured columns, selector + pagination — Accepted (2026-07-05)
 
@@ -330,6 +352,29 @@ these settle the three open questions the roadmap flagged for it.
   (c) returning a validation-outcome model from the service — the raise/catch
   split keeps the service's contract uniform and puts model-facing shaping in
   the thin tool layer where it belongs.
+
+## 18. First CI: GitHub Actions matrix over Windows/macOS/Linux — Accepted (2026-07-13)
+
+`.github/workflows/ci.yml` — the repo's first CI — runs on a matrix of
+`ubuntu-latest`, `windows-latest`, and `macos-latest`. Each job runs the full
+toolchain (`ruff`, `isort`, `ty`, `pytest`), builds the wheel, installs it as an
+isolated tool (`uv tool install .`), and smoke-tests that the `peek` console
+script boots against a scratch SQLite registry.
+
+- **Why the OS matrix, specifically:** decision #12 requires the entry point to
+  start cleanly on Windows and macOS with no shell assumptions, but the dev box
+  is Linux — that requirement is unverifiable locally. CI is the only place it
+  can actually be checked.
+- **Why a boot smoke test, not a full end-to-end run:** `peek` has no CLI flags
+  (see `backlog.md` for the missing `--help`/argument handling) and serves MCP
+  over stdio, so "does it start" is the meaningful signal at this stage; closing
+  stdin on a scratch registry gives a clean exit 0 for a healthy build and a
+  nonzero exit for a broken one.
+- **Why build + install the wheel in CI rather than just running `pytest`:** the
+  Phase 7/8 work (removing the `src.` import prefix, adding the console entry
+  point) is exactly the kind of packaging change that can pass `pytest` locally
+  while still being broken as an installed artifact — CI proves the artifact a
+  user actually gets is the thing that was tested.
 
 ---
 

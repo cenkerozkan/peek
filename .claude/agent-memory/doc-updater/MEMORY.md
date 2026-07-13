@@ -1,0 +1,1 @@
+- [Doc map conventions](doc_map_conventions.md) — roadmap/decisions/structure/backlog formatting patterns + the peek-sql cross-file fact to keep in sync.

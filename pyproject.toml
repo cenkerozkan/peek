@@ -3,11 +3,25 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "peek"
+# Distribution name is `peek-sql`: `peek` and `peek-mcp` are both taken on PyPI
+# (the latter by an unrelated MCP server). The import package and the console
+# command both remain `peek` — see decisions.md #14.
+name = "peek-sql"
 version = "0.1.0"
 description = "Safe, multi-database, read-only SQL MCP server"
 readme = "README.md"
 requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Cenker Ozkan", email = "cenkerozkanse@gmail.com" }]
+keywords = ["mcp", "sql", "sqlalchemy", "read-only", "database"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "fastmcp",
     "sqlalchemy",
@@ -40,9 +54,13 @@ dev = [
     "pytest==9.1.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/cenkerozkan/peek"
+Repository = "https://github.com/cenkerozkan/peek"
+
 [project.scripts]
-# Console entry point: unblocks `uvx peek`, `pipx install peek`, and
-# `python -m peek` (see decisions.md #14).
+# Console entry point. Launch is `uvx --from peek-sql peek` (the distribution and
+# the command differ); `pipx install peek-sql` and `python -m peek` also work.
 peek = "peek.server:main"
 
 [tool.hatch.build.targets.wheel]

@@ -71,8 +71,13 @@ def build_server() -> FastMCP:
 
 
 def main() -> None:
-    """Run the peek server over stdio (console/``python -m`` entry point)."""
-    build_server().run()
+    """Run the peek server over stdio (console/``python -m`` entry point).
+
+    stdout is the MCP channel: anything else written there corrupts the
+    protocol, so the transport is pinned to stdio and the startup banner is
+    suppressed rather than left to a framework default.
+    """
+    build_server().run(transport="stdio", show_banner=False)
 
 
 if __name__ == "__main__":

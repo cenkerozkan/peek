@@ -175,13 +175,21 @@ def test_lifespan_fails_when_the_config_file_is_missing(
         _in_lifespan(build_server(), lambda app: None)
 
 
-def test_main_runs_the_server(monkeypatch: pytest.MonkeyPatch) -> None:
-    served: List[FastMCP] = []
+def test_main_runs_the_server_over_stdio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The MCP channel is stdout, so the banner must never land there."""
+    served: List[Any] = []
     monkeypatch.setattr(
-        FastMCP, "run", lambda self, *a, **kw: served.append(self)
+        FastMCP,
+        "run",
+        lambda self, **kwargs: served.append((self, kwargs)),
     )
 
     main()
 
     assert len(served) == 1
-    assert served[0].name == "peek"
+    server, kwargs = served[0]
+    assert server.name == "peek"
+    assert kwargs["transport"] == "stdio"
+    assert kwargs["show_banner"] is False
