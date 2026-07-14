@@ -15,6 +15,7 @@ from typing import AsyncIterator, Dict
 
 from fastmcp import FastMCP
 
+from peek import __version__
 from peek.config import AppConfig
 from peek.services.connection_registry import ConnectionRegistry
 from peek.services.schema_service import SchemaService
@@ -54,10 +55,13 @@ def build_server() -> FastMCP:
     Returns:
         A configured ``FastMCP`` instance ready to ``run``. Built with
         ``mask_error_details=True`` so unexpected exceptions never leak a
-        connection string to the client.
+        connection string to the client, and with an explicit ``version`` --
+        left unset, FastMCP advertises *its own* version in the MCP
+        ``initialize`` handshake, which clients display as peek's.
     """
     mcp: FastMCP = FastMCP(
         name="peek",
+        version=__version__,
         instructions=(
             "Safe, read-only, multi-database SQL access. Call "
             "list_databases first to discover aliases, then use them as the "

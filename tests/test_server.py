@@ -13,8 +13,10 @@ from typing import Any, Callable, List
 
 import pytest
 from fastmcp import FastMCP
+from fastmcp import __version__ as fastmcp_version
 from sqlalchemy import create_engine, text
 
+from peek import __version__
 from peek.errors import ConfigError
 from peek.server import build_server, lifespan, main
 from peek.services.connection_registry import ConnectionRegistry
@@ -78,6 +80,19 @@ def test_build_server_registers_every_tool() -> None:
     tools = asyncio.run(server.list_tools())
 
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
+
+
+def test_build_server_advertises_peeks_own_version() -> None:
+    """The MCP handshake must report peek's version, not FastMCP's.
+
+    With ``version`` left unset, FastMCP advertises its own package version in
+    ``initialize``, which every MCP client then displays as peek's -- so this
+    pins the argument rather than trusting a framework default.
+    """
+    server = build_server()
+
+    assert server.version == __version__
+    assert server.version != fastmcp_version
 
 
 def test_lifespan_publishes_app_context(
