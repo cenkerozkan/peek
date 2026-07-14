@@ -763,7 +763,7 @@ wheels = [
 ]
 
 [[package]]
-name = "peek-sql"
+name = "peek-db"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

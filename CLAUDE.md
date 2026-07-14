@@ -6,22 +6,38 @@ every session's context.
 
 ## What this project is
 
-A **safe, multi-database, read-only SQL MCP server**: it exposes database
-introspection and query-execution tools over any SQLAlchemy-supported database, so
-an outer agent (Claude Code, Copilot) can do NL→SQL itself and run the result
-safely. **v1 has no internal LLM** — the server is `SQLAlchemy` + `FastMCP` +
-`sqlglot`. A human-facing interactive TUI (which *would* need its own NL→SQL brain)
-may come later. See `docs/backlog.md` for the suspended internal-pipeline idea.
+A **safe, multi-database, read-only query MCP server**: it exposes database
+introspection and query-execution tools over any SQLAlchemy-supported database —
+and, from Phase 11, **MongoDB** — so an outer agent (Claude Code, Copilot) can do
+NL→query itself and run the result safely. **v1 has no internal LLM** — the server
+is `SQLAlchemy` + `FastMCP` + `sqlglot` (+ `pymongo`, planned). A human-facing
+interactive TUI (which *would* need its own NL→SQL brain) may come later. See
+`docs/backlog.md` for the suspended internal-pipeline idea.
 
-Status: **architecture/brainstorming phase** — no application code yet.
+Status: **Phases 0–8 shipped** (SQL backends, all 5 tools, packaging, CI). Not yet
+published to PyPI. Phases 9–11 (publish, backend refactor, MongoDB) are next — see
+`docs/roadmap.md`.
+
+Distribution name: **`peek-db`** on PyPI (`peek` and `peek-mcp` are taken; the
+earlier `peek-sql` was dropped when NoSQL landed on the roadmap — decision #19).
+The import package and console command are both `peek`.
 
 ## Hard rules (do not violate)
 
 - **Read-only.** Queries must never mutate data. Enforced two ways: a read-only DB
-  role/grants, and a client-side SQL parse check that rejects any non-SELECT
-  statement before execution. Never weaken or bypass either layer.
+  role/grants, and a client-side check that rejects anything non-read-only before
+  execution. Never weaken or bypass either layer. **What the client-side check *is*
+  differs per backend**: for SQL, a `sqlglot` parse check rejecting any non-SELECT;
+  for Mongo, an **operation allowlist** — and note that an aggregation pipeline is
+  *not* inherently a read (`$out`/`$merge` write; `$out` replaces a whole
+  collection). See `docs/decisions.md` #22.
+- **One chokepoint.** Every query path goes through `query_service`, which calls the
+  backend's `validate` before its `execute`. Backend-specific knowledge lives *only*
+  in `backends/`. If a service needs an `if backend == ...` branch, the `Backend`
+  protocol is missing a method — add it there instead.
 - **Multi-database.** The server connects to several databases at once, addressed by
   alias. Every tool takes a DB target param — don't hardcode a single connection.
+  The alias also selects the **query language** (SQL vs. Mongo), so don't assume SQL.
 - **No internal LLM (v1).** The server does not generate SQL or reason with an LLM;
   the outer agent does that. Don't add an in-server LLM/agent/pipeline. (The
   suspended NL→SQL pipeline lives in `docs/backlog.md` with its revival condition.)
@@ -55,6 +71,9 @@ Treat `docs/` as settled truth; treat `BRAINSTORM.md` as thinking-in-progress.
 ## Key tech choices
 
 - **MCP framework:** FastMCP (reference docs vendored in `llm_friendly_docs/fastmcp.txt`).
-- **DB access:** SQLAlchemy (dialect-agnostic), configured via connection strings.
-- **Safety:** `sqlglot` parse check + read-only DB role.
+- **DB access:** SQLAlchemy (dialect-agnostic) for SQL; `pymongo` for Mongo
+  (planned). Both sit behind the `Backend` protocol in `backends/` — services never
+  touch either directly. Configured via connection strings.
+- **Safety:** read-only DB role (always) + a per-backend client-side check —
+  `sqlglot` parse check for SQL, operation allowlist for Mongo.
 - **No** LangChain/LangGraph in v1 (see `docs/backlog.md`).

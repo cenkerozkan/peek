@@ -230,7 +230,13 @@ live in their own environment and never collide with anything else on the machin
   (b) leading with pipx — an extra install/upgrade step versus `uvx`'s ephemeral,
   always-latest run that matches our uv tooling and the ecosystem norm.
 
-### 14a. Amendment — PyPI name conflict: distribution renamed to `peek-sql` (2026-07-13)
+### 14a. Amendment — PyPI name conflict: distribution renamed to `peek-sql` (2026-07-13) — SUPERSEDED by #19
+
+> **Superseded (2026-07-14, before publishing).** The distribution name is
+> **`peek-db`**, not `peek-sql` — MongoDB landed on the roadmap, which makes a `-sql`
+> suffix wrong. See **#19**. The reasoning below still holds for *why a bare `peek`
+> is impossible*; only the chosen suffix changed. Nothing was ever published under
+> `peek-sql`.
 
 While doing the Phase 8 packaging work, we checked PyPI directly and found the
 launch config above cannot work as written: **`peek` is already an unrelated
@@ -375,6 +381,122 @@ script boots against a scratch SQLite registry.
   point) is exactly the kind of packaging change that can pass `pytest` locally
   while still being broken as an installed artifact — CI proves the artifact a
   user actually gets is the thing that was tested.
+
+## 19. NoSQL on the roadmap → distribution renamed `peek-db` — Accepted (2026-07-14; supersedes 14a)
+
+MongoDB support is planned (see #20–#22 and `roadmap.md` Phases 10–11). That makes
+`peek` a read-only **database** server, not a read-only **SQL** server — so the
+`-sql` suffix chosen in 14a is wrong going forward. The **PyPI distribution name is
+`peek-db`** (verified free on 2026-07-14). The import package and the console
+command remain `peek`, exactly as in #14.
+
+- **Why now, specifically:** a PyPI name is permanent — it cannot be renamed, and a
+  deleted version's number can never be reused. `peek-sql` had **not** been published
+  when the NoSQL direction landed, so this was the last moment the name was free to
+  change. Renaming after publication would mean two distributions, a dead name, and
+  a migration story for early users. The cost today is a one-line `pyproject.toml`
+  edit; the cost a week from now is permanent.
+- **What changes:** `pyproject.toml` `name`, and every documented invocation:
+  - MCP launch config: `{"command": "uvx", "args": ["--from", "peek-db", "peek"]}`
+  - With a driver extra: `uvx --from 'peek-db[postgres]' peek`
+  - pipx: `pipx install peek-db` / `pipx install 'peek-db[postgres,mysql]'`
+    (a `mongo` extra joins them in Phase 11)
+  - `python -m peek` is unaffected (it never went through PyPI naming).
+- **What does not change:** no application code. The import package is still `peek`,
+  the command a user types is still `peek`. Only the install-time identifier moves.
+- **Still true from 14a:** `peek` and `peek-mcp` are both taken on PyPI by unrelated
+  packages, which is why a bare `peek` distribution remains impossible.
+
+## 20. Backend port/adapter: services stop assuming SQLAlchemy — Accepted (2026-07-14)
+
+MongoDB cannot be reached through the current stack. Three assumptions are baked in
+and all three break: `connection_registry` maps an alias to a SQLAlchemy `Engine`;
+`schema_service` introspects via SQLAlchemy's `inspect()`; `sql_service` routes
+every statement through the `sqlglot` guard. Mongo has **no engine, no SQL to parse,
+and no declared schema**.
+
+The fix is a **port/adapter seam below the services**: a `Backend` protocol
+(`list_tables` · `get_schema` · `validate` · `execute` · `dispose`), with
+`SqlBackend` (SQLAlchemy + sqlglot, the current behavior, moved not rewritten) and
+`MongoBackend` (pymongo) implementing it. The connection registry maps
+`alias -> Backend` instead of `alias -> Engine`; the services and the tool layer
+become backend-agnostic and keep their current shape.
+
+- **Alternatives rejected:** (a) **a parallel Mongo stack** (`mongo_service` +
+  a second guard, dispatched on alias type at the tool layer) — faster to ship, but
+  it duplicates the safety chokepoint and the denylist logic. Two chokepoints means
+  the invariant "every query path passes a guard" stops being structural and starts
+  being a thing you have to remember, which is exactly the property #8 exists to
+  prevent. (b) **SQL-over-Mongo translation** — let the agent keep writing SQL and
+  translate it to find/aggregate internally. Rejected: the translation layer is
+  large, leaky, and becomes a new safety surface, since a guard that passes the SQL
+  says nothing about what the *translated* Mongo query does.
+- **Why:** the chokepoint invariant survives — **each backend owns its own
+  `validate`, and `execute` is unreachable without it.** The denylist (#16) stays a
+  single registry-level accessor consulted by every backend. And the layered import
+  direction is unchanged: `backends/` sits beside `infra/`, below `services/`.
+- **Cost, stated honestly:** this is a refactor of shipped, tested code (Phases 4–5),
+  not an additive module. It is sequenced as its own phase (`roadmap.md` Phase 10)
+  and must land green — with the existing SQL tests passing **unchanged** — before
+  any Mongo code is written. If the SQL tests need editing to accommodate the seam,
+  the seam is wrong.
+
+## 21. Backend-neutral tools: `run_query` / `validate_query` — Accepted (2026-07-14)
+
+`run_sql`/`validate_sql` become **`run_query`/`validate_query`**, taking a `query`
+string whose language is determined by the alias's backend: SQL for a SQL alias,
+a Mongo query document for a Mongo alias. `list_databases` already reports each
+alias's dialect, and gains a `backend` field (`sql` | `mongo`) so the agent knows
+which language to write before it writes it.
+
+- **Alternatives rejected:** (a) **separate per-backend tools** (`run_sql` +
+  `find`/`aggregate`) — the most explicit option, and genuinely harder to misuse,
+  but the tool list grows with every backend and most tools are inapplicable to most
+  aliases, which is noise in the agent's context on every single call. (b) Keeping
+  `run_sql` SQL-only and adding Mongo tools beside it — the same problem, plus a
+  naming asymmetry that implies SQL is the "real" backend.
+- **Why:** one tool surface that doesn't grow per backend. The alias already selects
+  the database; letting it also select the query language keeps the agent's mental
+  model small ("ask `list_databases` what this alias speaks, then speak it").
+- **The risk, and the mitigation:** an agent could write SQL at a Mongo alias. That
+  fails closed — the Mongo backend's `validate` rejects anything it cannot parse as
+  a query document — and the rejection message names the expected language for that
+  alias, so the agent can correct itself in one turn. The tool docstrings (which are
+  the agent-facing contract, per `architecture.md`) must state this explicitly.
+- **Naming:** the rename is a breaking change to the tool surface, which is free to
+  make **now** (nothing is published — see #19) and expensive later.
+
+## 22. Mongo read-only: operation allowlist, not a parse check — Accepted (2026-07-14)
+
+`sqlglot` is meaningless for Mongo, so `MongoBackend.validate` enforces read-only
+by a different mechanism: an **allowlist of operations** — `find`, `aggregate`,
+`count_documents`, `distinct` — and everything else is refused. Within `aggregate`,
+the pipeline is walked stage by stage and refused if it contains a **write stage**.
+
+- **The non-obvious hazard this exists for:** an aggregation pipeline is not
+  inherently read-only. **`$out` and `$merge` write their results to a
+  collection** — `$out` will happily replace an entire collection's contents. A
+  naive "aggregate is just a read" assumption is a data-loss bug, and it is the
+  single most important thing to get right in the Mongo backend.
+- **Also refused:** `$where` and `mapReduce` (server-side JavaScript execution —
+  arbitrary code, not a query), `$function` and `$accumulator` (same), and any
+  `$lookup`/`$unionWith` into a **denylisted** collection, since a pipeline can
+  otherwise read a hidden collection through a join. The denylist (#16) is walked
+  across every stage that names a collection, not just the top-level one.
+- **Defense in depth, unchanged:** the parse/allowlist check is the *second* layer,
+  never the only one. The first remains a **read-only database role** — in Mongo, a
+  user granted the built-in `read` role on the target database. Documented as
+  required, exactly as for SQL (#8).
+- **Schema for a schemaless store:** Mongo has no declared schema, so
+  `MongoBackend.get_schema` **infers** one by sampling documents from each
+  collection (`$sample`) and unioning the observed field paths and their BSON types.
+  This makes `get_schema` **lossy and probabilistic** for Mongo, which is a real
+  semantic difference from SQL — the result is marked as inferred, with the sample
+  size reported, so the agent never mistakes it for a declared schema. Sample size
+  is configurable (`PEEK_MONGO_SAMPLE_SIZE`, default 100).
+- **Open:** the exact wire format for a Mongo query at the tool boundary (a JSON
+  document? an argument object?) is unsettled — see `../BRAINSTORM.md`. It is the
+  main thing to nail down before Phase 11 code starts.
 
 ---
 

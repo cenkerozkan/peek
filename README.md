@@ -31,6 +31,7 @@ reasoning happens in the agent you already use.
   - [VS Code (GitHub Copilot)](#vs-code-github-copilot)
 - [Tools](#tools)
 - [Settings](#settings)
+- [Roadmap](#roadmap)
 - [Development](#development)
 - [Documentation](#documentation)
 - [License](#license)
@@ -80,20 +81,20 @@ message ever contains a connection string. `list_databases` returns aliases only
 
 ## Install
 
-`peek` is published as **`peek-sql`** (the names `peek` and `peek-mcp` were
+`peek` is published as **`peek-db`** (the names `peek` and `peek-mcp` were
 already taken on PyPI). The command and the import package are both `peek`.
 
 You don't need to install it explicitly — the editor configs below run it with
 `uvx`, which fetches and caches it on first launch. To install it anyway:
 
 ```sh
-uv tool install peek-sql
+uv tool install peek-db
 ```
 
 or
 
 ```sh
-pipx install peek-sql
+pipx install peek-db
 ```
 
 Requires Python 3.13+.
@@ -114,14 +115,14 @@ Install only the ones you actually connect to:
 |            | `all-drivers`  | all of the above |
 
 ```sh
-uv tool install 'peek-sql[postgres]'
-pipx install 'peek-sql[postgres,mysql]'
+uv tool install 'peek-db[postgres]'
+pipx install 'peek-db[postgres,mysql]'
 ```
 
 In an editor config, put the extra in the `--from` argument:
 
 ```json
-{ "command": "uvx", "args": ["--from", "peek-sql[postgres]", "peek"] }
+{ "command": "uvx", "args": ["--from", "peek-db[postgres]", "peek"] }
 ```
 
 ## Configure your databases
@@ -177,14 +178,14 @@ Every editor below launches the same command. If you installed with `uv tool` or
 ### Claude Code
 
 ```sh
-claude mcp add peek -- uvx --from peek-sql peek
+claude mcp add peek -- uvx --from peek-db peek
 ```
 
 Add `-s user` to make it available in every project rather than just this one,
 and use `--env` if your registry lives somewhere non-default:
 
 ```sh
-claude mcp add peek -s user --env PEEK_CONFIG_FILE=/path/to/databases.toml -- uvx --from peek-sql peek
+claude mcp add peek -s user --env PEEK_CONFIG_FILE=/path/to/databases.toml -- uvx --from peek-db peek
 ```
 
 Verify with `/mcp` inside Claude Code — `peek` should be listed as connected,
@@ -200,7 +201,7 @@ project):
   "mcpServers": {
     "peek": {
       "command": "uvx",
-      "args": ["--from", "peek-sql", "peek"]
+      "args": ["--from", "peek-db", "peek"]
     }
   }
 }
@@ -218,7 +219,7 @@ Create `.vscode/mcp.json` in your project:
     "peek": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["--from", "peek-sql", "peek"]
+      "args": ["--from", "peek-db", "peek"]
     }
   }
 }
@@ -248,6 +249,27 @@ Environment variables, all prefixed `PEEK_`:
 | ------------------ | ------------------------------------ | ------------------------------------ |
 | `PEEK_CONFIG_FILE` | `databases.toml` in the user config dir | Path to the connection registry.  |
 | `PEEK_MAX_ROWS`    | `1000`                               | Row cap applied by `run_sql`. Results beyond it are truncated, and `truncated` is set on the response. |
+
+## Roadmap
+
+**MongoDB support is next.** `peek` is becoming a read-only *database* server, not
+just a read-only *SQL* server — which is why the package is `peek-db` and not
+`peek-sql`.
+
+Two things will change when it lands, and they're worth knowing before you build on
+this:
+
+- **`run_sql`/`validate_sql` become `run_query`/`validate_query`.** One tool surface
+  for every backend; the alias you pass decides the query language, and
+  `list_databases` tells you which one it speaks.
+- **Read-only means something different for Mongo.** There's no SQL to parse, so the
+  guard becomes an operation allowlist (`find`, `aggregate`, `count`, `distinct`).
+  Note that an aggregation pipeline is *not* inherently read-only — `$out` and
+  `$merge` write, and `$out` will replace an entire collection — so pipelines are
+  walked stage by stage and refused if they contain one.
+
+See [`docs/roadmap.md`](docs/roadmap.md) Phases 10–11 and
+[`docs/decisions.md`](docs/decisions.md) #20–#22.
 
 ## Development
 

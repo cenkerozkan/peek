@@ -1,11 +1,11 @@
 # Roadmap
 
-Ordered implementation plan for the read-only SQL MCP server. We build
-**bottom-up**, following the downward import direction from `structure.md`
-(`tools/ → services/ → infra/`, `services/ → safety/`): each layer is built and
-tested before the layer that depends on it. **One step at a time** — a step is
-done only when its code, tests, and the full toolchain (`ruff`, `isort`, `ty`,
-`pytest`) are green.
+Ordered implementation plan for the read-only, multi-database query MCP server. We
+build **bottom-up**, following the downward import direction from `structure.md`
+(`tools/ → services/ → backends/ → infra/`, `backends/ → safety/`): each layer is
+built and tested before the layer that depends on it. **One step at a time** — a
+step is done only when its code, tests, and the full toolchain (`ruff`, `isort`,
+`ty`, `pytest`) are green.
 
 For *what* each piece is and *why*, see `architecture.md`, `structure.md`, and
 `decisions.md`. This file is only the order of work.
@@ -164,10 +164,12 @@ Make peek installable as an isolated app. See `decisions.md` #14 (amended
       on the Phase 7 entry-point work) so `uvx`, `pipx install`, and
       `python -m peek` all resolve to a runnable command.
 - [x] **PyPI name conflict discovered and resolved.** `peek` and `peek-mcp` are
-      both already taken on PyPI by unrelated packages. The distribution name is
-      now `peek-sql`; the import package and console command stay `peek`. See
-      `decisions.md` #14.
-- [x] `pyproject.toml` PyPI metadata: `name = "peek-sql"`, `license = "MIT"` (+
+      both already taken on PyPI by unrelated packages, so the distribution name
+      must differ from the command. *(The suffix chosen here — `peek-sql` — was
+      superseded by `peek-db` on 2026-07-14, before publishing, when NoSQL landed
+      on the roadmap. See `decisions.md` #19.)* The import package and console
+      command stay `peek`.
+- [x] `pyproject.toml` PyPI metadata: `name` (now `peek-db`), `license = "MIT"` (+
       license-files), authors, keywords, classifiers, `[project.urls]`.
 - [x] `server.py` `main()` pins `run(transport="stdio", show_banner=False)` —
       stdout is the MCP channel, so the transport is explicit and the startup
@@ -185,25 +187,78 @@ Make peek installable as an isolated app. See `decisions.md` #14 (amended
       smoke-testing that the `peek` console script boots. This is how the
       Windows/macOS entry-point requirement (decision #12) is verified, since it
       can't be checked on the Linux dev box. See `decisions.md` #18.
-- [ ] **Publish `peek-sql` 0.1.0 to PyPI and claim the name.** Not done — folded
-      into Phase 9 below. Until this happens, `uvx --from peek-sql peek` does not
-      work for anyone but us.
+- [ ] **Publish 0.1.0 to PyPI and claim the name.** Not done — folded into Phase 9
+      below. **The name is now `peek-db`, not `peek-sql`** (decision #19): NoSQL
+      support landed on the roadmap before we published, and a PyPI name is
+      permanent. Until this happens, `uvx --from peek-db peek` does not work for
+      anyone but us.
 
 ## Phase 9 — End-to-end, publishing & docs ⬜
 
-- [ ] **Publish `peek-sql` 0.1.0 to PyPI**, claiming the distribution name (moved
+- [ ] **Rename the distribution to `peek-db`** in `pyproject.toml` (decision #19).
+      Do this *before* publishing — it is a one-line edit now and impossible later.
+- [ ] **Publish `peek-db` 0.1.0 to PyPI**, claiming the distribution name (moved
       up from Phase 8 — local install verification is done, the publish step is
-      not).
+      not). Dry-run on **TestPyPI** first: a version number, once published, can
+      never be reused, so a broken 0.1.0 is permanent.
+- [x] README rewritten as a published project: purpose-first intro, table of
+      contents, install, per-editor MCP setup (Claude Code / Cursor / VS Code
+      Copilot), registry config, tool reference, settings.
 - [ ] Manual end-to-end: register a real DB alias, drive `list_databases` →
-      `list_tables` → `get_schema` → `validate_sql` → `run_sql` from an MCP client.
-- [ ] Document the MCP launch config (config-file *path* only — never credentials)
-      and a sample `databases.toml`, including a per-alias `exclude_tables` example
-      (Phase 3). Lead the install/launch story with
-      `uvx --from peek-sql peek`
-      (`{"command": "uvx", "args": ["--from", "peek-sql", "peek"]}`); note
-      `pipx install peek-sql` as the alternative and the driver-extra syntax (see
-      `decisions.md` #14).
+      `list_tables` → `get_schema` → `validate_query` → `run_query` from an MCP
+      client.
 - [ ] Read-only DB role guidance (the second, independent safety layer).
+
+---
+
+## Phase 10 — Backend port/adapter refactor ⬜
+
+Prerequisite for any NoSQL work. **No Mongo code is written in this phase** —
+the point is to make the existing SQL stack backend-agnostic *without changing what
+it does*. See `decisions.md` #20.
+
+- [ ] `backends/base.py` — the `Backend` protocol: `list_tables`, `get_schema`,
+      `validate`, `execute`, `dispose`.
+- [ ] `backends/sql.py` — `SqlBackend`: **move** the shipped SQLAlchemy + sqlglot
+      code behind the protocol. A move, not a rewrite.
+- [ ] `connection_registry` maps `alias -> Backend` instead of `alias -> Engine`.
+      `is_excluded()` stays here, **above** the seam, so no backend can forget the
+      denylist.
+- [ ] Rename `services/sql_service.py` → `services/query_service.py`, and
+      `tools/sql.py` → `tools/query.py` (`run_sql`/`validate_sql` →
+      `run_query`/`validate_query` — decision #21). Breaking the tool surface is
+      free now and expensive after publishing.
+- [ ] `list_databases` gains a `backend` field (`sql` | `mongo`) so the agent knows
+      which query language an alias speaks.
+- [ ] **Acceptance gate: the existing Phase 4–5 tests pass **unchanged**.** If they
+      need editing to accommodate the seam, the seam is wrong — that is the signal
+      to redesign the protocol, not the tests.
+
+## Phase 11 — MongoDB backend ⬜
+
+First NoSQL backend. See `decisions.md` #22. The safety work here is not a port of
+the SQL guard — it is a different mechanism for a different threat model.
+
+- [ ] Settle the open question first: **the wire format of a Mongo query at the tool
+      boundary** (a JSON query document? a structured argument object?). Currently
+      unsettled — see `BRAINSTORM.md`. Do not start code before this is decided; it
+      determines the tool contract.
+- [ ] `mongo` driver extra → `pymongo`; `infra/mongo_client.py` builds clients.
+- [ ] `safety/mongo_guard.py` — the operation allowlist (`find`, `aggregate`,
+      `count_documents`, `distinct`). **Refuse `$out` and `$merge`: an aggregation
+      pipeline can WRITE, and `$out` replaces an entire collection.** Refuse
+      server-side JavaScript (`$where`, `mapReduce`, `$function`, `$accumulator`).
+- [ ] `backends/mongo.py` — `MongoBackend`. `get_schema` **infers** a schema by
+      sampling documents (`$sample`, `PEEK_MONGO_SAMPLE_SIZE`, default 100) and
+      unioning observed field paths + BSON types; the result is marked **inferred**
+      with its sample size, so the agent never mistakes it for a declared schema.
+- [ ] Denylist across pipeline stages: a `$lookup`/`$unionWith` into an excluded
+      collection must be rejected, exactly as a SQL subquery would be.
+- [ ] Tests against a real MongoDB (testcontainers or a CI service container) —
+      including a case proving a `$out` pipeline is refused, and one proving an
+      excluded collection is unreachable via `$lookup`.
+- [ ] Docs: Mongo read-only role guidance (built-in `read` role), and the
+      `databases.toml` shape for a Mongo alias.
 
 ---
 

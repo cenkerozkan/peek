@@ -31,10 +31,13 @@ authoritative) has these house conventions, confirmed across the Phase 7/8 updat
 - **backlog.md** entries always pair "Why removed/deferred" with a "Revival
   condition" — never just log a cut without stating what would bring it back.
 - Cross-file fact that must stay in sync: the **PyPI distribution name vs. import/
-  command name split** (`peek-sql` on PyPI, `peek` for `import peek` / console
-  command / `python -m peek`) appears in `pyproject.toml` comments,
-  `docs/decisions.md` #14/#14a, `docs/roadmap.md` Phase 8/9, and `README.md`. If
-  this ever changes again, grep all four.
+  command name split** (**`peek-db`** on PyPI — renamed from `peek-sql` on
+  2026-07-14, decision #19, when MongoDB landed on the roadmap; `peek` for
+  `import peek` / console command / `python -m peek`). It appears in
+  `pyproject.toml` comments, `docs/decisions.md` #14/#14a/#19, `docs/roadmap.md`
+  Phase 8/9, `.github/workflows/ci.yml` comments, and `README.md`. If it ever
+  changes again, grep all five — and note `#14a` is a *superseded* record that
+  deliberately still says `peek-sql`, so don't "fix" it.
 - CLAUDE.md itself carries no install/launch commands (`grep -n "uvx" CLAUDE.md`
   is empty by design) — that detail lives only in README.md + decisions.md #14,
   keeping CLAUDE.md lean as its own rule requires.

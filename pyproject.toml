@@ -3,12 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-# Distribution name is `peek-sql`: `peek` and `peek-mcp` are both taken on PyPI
-# (the latter by an unrelated MCP server). The import package and the console
-# command both remain `peek` — see decisions.md #14.
-name = "peek-sql"
+# Distribution name is `peek-db`: `peek` and `peek-mcp` are both taken on PyPI
+# (the latter by an unrelated MCP server). Not `peek-sql` — NoSQL (MongoDB) is on
+# the roadmap, and a PyPI name is permanent. The import package and the console
+# command both remain `peek` — see decisions.md #19.
+name = "peek-db"
 version = "0.1.0"
-description = "Safe, multi-database, read-only SQL MCP server"
+description = "Safe, multi-database, read-only SQL and NoSQL MCP server"
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
@@ -34,7 +35,8 @@ dependencies = [
 [project.optional-dependencies]
 # Database drivers (DBAPIs). SQLAlchemy ships dialects, not drivers, so each
 # non-SQLite backend needs its connector installed. SQLite works out of the box
-# (stdlib sqlite3). Install only what you connect to, e.g. peek[postgres,mysql].
+# (stdlib sqlite3). Install only what you connect to, e.g. peek-db[postgres,mysql].
+# A `mongo` extra (pymongo) arrives with the MongoDB backend — roadmap Phase 11.
 postgres = ["psycopg[binary]"]
 mysql = ["pymysql"]
 mssql = ["pyodbc"]
@@ -49,7 +51,7 @@ all-drivers = [
 [dependency-groups]
 # A PEP 735 group, not an extra: uv installs it by default (`uv run`, `uv sync`),
 # whereas an extra needs an explicit `--extra dev` and so is missing in CI. It is
-# also not published, so `pip install peek-sql[dev]` can't hand users our linters.
+# also not published, so `pip install peek-db[dev]` can't hand users our linters.
 dev = [
     "ruff==0.15.20",
     "isort==8.0.1",
@@ -63,8 +65,8 @@ Homepage = "https://github.com/cenkerozkan/peek"
 Repository = "https://github.com/cenkerozkan/peek"
 
 [project.scripts]
-# Console entry point. Launch is `uvx --from peek-sql peek` (the distribution and
-# the command differ); `pipx install peek-sql` and `python -m peek` also work.
+# Console entry point. Launch is `uvx --from peek-db peek` (the distribution and
+# the command differ); `pipx install peek-db` and `python -m peek` also work.
 peek = "peek.server:main"
 
 [tool.hatch.build.targets.wheel]

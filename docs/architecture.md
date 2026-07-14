@@ -6,14 +6,16 @@ For removed/deferred ideas, see `backlog.md`.
 
 ## Overview
 
-A **safe, multi-database, read-only SQL MCP server**. It exposes database
-introspection and query-execution tools over any SQLAlchemy-supported database. The
-consuming agent (Claude Code, Copilot) does the NL→SQL reasoning itself; this server
-gives it a clean, safe way to explore schemas and run the resulting SQL.
+A **safe, multi-database, read-only query MCP server**. It exposes database
+introspection and query-execution tools over any SQLAlchemy-supported database —
+and, from Phase 11, over MongoDB. The consuming agent (Claude Code, Copilot) does
+the NL→query reasoning itself; this server gives it a clean, safe way to explore
+schemas and run the result.
 
-**v1 has no internal LLM.** The stack is `SQLAlchemy` + `FastMCP` + `sqlglot`. (An
-in-server NL→SQL pipeline was considered and suspended — running an LLM agent inside
-a tool already driven by an agent is wasteful. See `backlog.md`.)
+**v1 has no internal LLM.** The stack is `SQLAlchemy` + `FastMCP` + `sqlglot`
+(+ `pymongo`, planned). (An in-server NL→SQL pipeline was considered and suspended —
+running an LLM agent inside a tool already driven by an agent is wasteful. See
+`backlog.md`.)
 
 The server connects to **multiple databases at once**, addressed by alias. All query
 execution is **read-only**.
@@ -26,14 +28,22 @@ stdio, so an HTTP transport can be added later.
 
 All tools are read-only and take a DB alias param (multi-database):
 
-- `list_databases()` — discover configured aliases (+ safe metadata like dialect).
-- `list_tables(db)` — list tables in a database.
+- `list_databases()` — discover configured aliases (+ safe metadata: `backend` and
+  `dialect`).
+- `list_tables(db)` — list tables (SQL) or collections (Mongo) in a database.
 - `get_schema(db, ...)` — return structured columns (plus primary/foreign keys)
   for tables; scope large schemas with an explicit table selector or
-  `limit`/`offset` pagination.
-- `validate_sql(db, sql)` — parse-check a statement (is it a safe, read-only SELECT?)
-  without running it.
-- `run_sql(db, sql)` — validate then execute a read-only query; return rows (capped).
+  `limit`/`offset` pagination. For Mongo the schema is **inferred by sampling**
+  documents, and is marked as such (decision #22).
+- `validate_query(db, query)` — check a statement is safe and read-only, without
+  running it.
+- `run_query(db, query)` — validate then execute a read-only query; return rows
+  (capped).
+
+**The `query` argument's language is chosen by the alias**, not by the tool: SQL for
+a SQL alias, a Mongo query document for a Mongo alias. `list_databases` reports each
+alias's `backend` so the agent knows which to write. Writing SQL at a Mongo alias
+fails closed, with a rejection message naming the expected language (decision #21).
 
 There is intentionally **no coarse `ask_database` tool** in v1 — that required an
 internal LLM. The outer agent composes the tools above itself.
@@ -49,19 +59,25 @@ Tools stay thin; all logic lives in shared services.
 │   thin, agent-facing. Validates params, calls a service,     │
 │   shapes the response. Docstrings ARE the interface contract.│
 │   list_databases · list_tables · get_schema ·                │
-│   validate_sql · run_sql                                     │
+│   validate_query · run_query                                 │
 └───────────────┬─────────────────────────────────────────────┘
                 │
 ┌───────────────▼─────────────────────────────────────────────┐
-│ Service layer                                                │
-│   connection_registry  alias -> engine                       │
+│ Service layer            (backend-agnostic)                  │
+│   connection_registry  alias -> Backend                      │
 │   schema_service       introspection (list tables, schema)   │
-│   sql_service          validate (read-only check) + execute  │
+│   query_service        validate (read-only check) + execute  │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────┐
+│ Backend layer (port/adapter)   ← the Backend protocol        │
+│   SqlBackend     SQLAlchemy engine + sqlglot guard           │
+│   MongoBackend   pymongo + operation-allowlist guard (planned)│
 └───────────────┬─────────────────────────────────────────────┘
                 │
 ┌───────────────▼─────────────────────────────────────────────┐
 │ Infrastructure                                               │
-│   SQLAlchemy engines · config-file reader                    │
+│   SQLAlchemy engines · Mongo clients · config-file reader    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,23 +88,48 @@ Tools stay thin; all logic lives in shared services.
   agent (including structured, actionable errors — never raw exceptions). Every tool
   takes a DB alias param. Tool docstrings are a first-class design artifact: the
   agent chooses tools by reading them.
-- **Service layer** — all business logic. `sql_service` and `schema_service` are the
-  workhorses; `connection_registry` resolves aliases to engines.
-- **Infrastructure** — long-lived resources: SQLAlchemy engines, the config-file
-  reader.
+- **Service layer** — all business logic, and **no knowledge of any specific
+  backend**. `query_service` and `schema_service` are the workhorses;
+  `connection_registry` resolves aliases to backends.
+- **Backend layer** — the port/adapter seam (decision #20). One `Backend` protocol —
+  `list_tables` · `get_schema` · `validate` · `execute` · `dispose` — with one
+  adapter per database family. Each adapter owns its **own** read-only enforcement,
+  because "read-only" means something different in each: a SQL parse check for
+  `SqlBackend`, an operation allowlist for `MongoBackend`.
+- **Infrastructure** — long-lived resources: SQLAlchemy engines, Mongo clients, the
+  config-file reader.
 
-### Key invariant: safety lives in the service layer
+### Key invariant: safety lives at the chokepoint
 
-The read-only enforcement (SQL parse check rejecting non-SELECT) lives inside
-`sql_service`, which calls `safety/guard.py`. **Every path that executes SQL goes
-through `sql_service`.** It is impossible to execute SQL without passing the check.
+Read-only enforcement lives inside `query_service`, which calls the backend's
+`validate` before its `execute`. **Every path that runs a query goes through
+`query_service`.** It is impossible to execute anything without passing the check.
 Combined with a read-only DB role, that's the two-layer safety model.
+
+The backend seam (decision #20) does not weaken this: it *narrows* it. There is
+still exactly one chokepoint in the service layer; what varies per backend is only
+*how* `validate` decides, never *whether* it runs. A backend that implements
+`execute` without a meaningful `validate` is a bug, not a configuration.
+
+### Read-only means different things per backend
+
+- **SQL** — `sqlglot` parses the statement in the alias's dialect; anything that is
+  not a single read-only `SELECT` is refused (mutations in CTEs and subqueries,
+  stacked statements, unparsed commands included).
+- **Mongo** *(planned — decision #22)* — an **operation allowlist**: `find`,
+  `aggregate`, `count_documents`, `distinct`. Everything else is refused. Crucially,
+  **`aggregate` is not inherently a read**: the `$out` and `$merge` stages *write*
+  (`$out` replaces a whole collection), so every pipeline is walked stage by stage
+  and refused if it contains one. Server-side JavaScript (`$where`, `mapReduce`,
+  `$function`, `$accumulator`) is refused outright — it is arbitrary code, not a
+  query.
 
 ### Table exclusion (third safety layer)
 
 Each alias may declare a per-database `exclude_tables` denylist (see decision
 #16). `is_excluded(alias, table)` on the connection registry is the single source
-of truth both `schema_service` and `sql_service` consult. An excluded table's
+of truth every backend consults — it stays at the **registry** level, above the
+backend seam, so a new backend cannot forget it. An excluded table's
 **name/identity is never model-facing**: it is omitted from `list_tables`,
 rejected by `get_schema` (as if it does not exist), scrubbed from other tables'
 foreign keys, and rejected at execution. The **fact** that tables were withheld
@@ -96,6 +137,10 @@ foreign keys, and rejected at execution. The **fact** that tables were withheld
 the agent can tell a user that relevant data may be out of reach (and that a
 human might need to grant access) instead of silently answering from a partial
 picture.
+
+For Mongo the unit is a **collection**, and the denylist must be walked across
+every pipeline stage that names one — a `$lookup` or `$unionWith` can otherwise
+read a hidden collection through a join, exactly as a SQL subquery could.
 
 ## Multi-database
 
@@ -179,12 +224,16 @@ created per-call (engines are expensive and pooled).
 ## Tech stack
 
 - **MCP:** FastMCP
-- **DB access:** SQLAlchemy (dialect-agnostic), connection strings
-- **DB drivers:** DBAPI drivers are **optional extras** (SQLAlchemy ships dialects,
-  not drivers). Supported v1 backends: PostgreSQL (`postgres` → `psycopg[binary]`),
+- **DB access:** SQLAlchemy (dialect-agnostic) for SQL backends, `pymongo` for Mongo
+  (planned) — both behind the `Backend` protocol (decision #20), reached via
+  connection strings.
+- **DB drivers:** drivers are **optional extras** (SQLAlchemy ships dialects,
+  not drivers). Supported SQL backends: PostgreSQL (`postgres` → `psycopg[binary]`),
   MySQL/MariaDB (`mysql` → `pymysql`), SQL Server (`mssql` → `pyodbc`), Oracle
-  (`oracle` → `oracledb`); SQLite needs no install (stdlib). See `decisions.md` #13.
-- **Safety:** read-only DB role + client-side parse check (`sqlglot`)
+  (`oracle` → `oracledb`); SQLite needs no install (stdlib). MongoDB is the same
+  pattern: `mongo` → `pymongo` (planned). See `decisions.md` #13.
+- **Safety:** read-only DB role (every backend) + a per-backend client-side check —
+  `sqlglot` parse check for SQL, operation allowlist for Mongo (`decisions.md` #22).
 - **Paths/config:** `pathlib` + `platformdirs`
 - **Config/models:** `pydantic` + `pydantic-settings` (connection URLs as `SecretStr`)
 - **No** LangChain / LangGraph / embeddings / vector store in v1 (see `backlog.md`)
