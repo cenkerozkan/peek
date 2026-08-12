@@ -137,3 +137,5 @@ Thumbs.db
 
 # Others
 sessions.txt
+# peek — contains database credentials
+.peek/
