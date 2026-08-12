@@ -116,8 +116,8 @@ def save_entry(path: Path, alias: str, entry: DatabaseEntry) -> None:
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, "w") as f:
-        tomlkit.dump(doc, f)
+    with open(path, "wb") as f:
+        f.write(tomlkit.dumps(doc).encode("utf-8"))
 
 
 def remove_entry(path: Path, alias: str) -> None:
@@ -142,5 +142,5 @@ def remove_entry(path: Path, alias: str) -> None:
 
     del databases[alias]
 
-    with open(path, "w") as f:
-        tomlkit.dump(doc, f)
+    with open(path, "wb") as f:
+        f.write(tomlkit.dumps(doc).encode("utf-8"))

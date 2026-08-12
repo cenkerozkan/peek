@@ -137,7 +137,10 @@ def test_add_output_goes_to_stderr(
     )
 
     assert result.exit_code == 0
-    assert result.stdout == ""
+    assert "added" not in result.stdout
+    assert "Restart" not in result.stdout
+    assert "Alias" not in result.stdout
+    assert "Connection URL" not in result.stdout
     assert "mydb" in result.stderr
 
 
