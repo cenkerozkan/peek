@@ -123,14 +123,14 @@ This should show both branch names in the push trigger.
 
 ## Outcome
 
-<!-- Filled in by the coding agent before moving this file to tasks/done/ -->
-
-**Status:**
+**Status:** done
 
 **Files changed:**
+- `.github/workflows/publish-testpypi.yml` (new)
+- `.github/workflows/ci.yml` (modified)
 
-**Acceptance check:**
+**Acceptance check:** passed
 
-**Deviations:**
+**Deviations:** none
 
-**Problems:**
+**Problems:** none
