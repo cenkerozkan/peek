@@ -90,12 +90,15 @@ All tests pass.
 
 <!-- Filled in by the coding agent before moving this file to tasks/done/ -->
 
-**Status:**
+**Status:** done
 
 **Files changed:**
+- `src/peek/cli/__init__.py` (modified — added `resolve_config_path` function and imports)
+- `tests/cli/__init__.py` (new, empty)
+- `tests/cli/test_resolve_config.py` (new — 4 tests)
 
-**Acceptance check:**
+**Acceptance check:** passed — `python -m pytest tests/cli/test_resolve_config.py -v` → 4 passed in 0.03s
 
-**Deviations:**
+**Deviations:** none
 
-**Problems:**
+**Problems:** None. Pre-existing `ty` errors in `tests/infra/test_config_file.py` are unrelated to this task.
