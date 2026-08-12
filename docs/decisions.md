@@ -498,6 +498,40 @@ the pipeline is walked stage by stage and refused if it contains a **write stage
   document? an argument object?) is unsettled — see `../BRAINSTORM.md`. It is the
   main thing to nail down before Phase 11 code starts.
 
+## 23. Three-branch release flow with protected `main` and `testing` — Accepted (2026-08-12)
+
+`dev -> testing -> main`, each stage gated before the next:
+
+- **`dev`** — active development. Unprotected; developers push freely.
+- **`testing`** — pre-release validation. Protected (requires PR). A push here
+  triggers an automatic publish to **TestPyPI** via
+  `.github/workflows/publish-testpypi.yml` (trusted publishing / OIDC, no stored
+  tokens). The team installs from TestPyPI and verifies the package before
+  promoting.
+- **`main`** — production. Protected (requires PR + review). A push here triggers
+  an automatic publish to **real PyPI** via `.github/workflows/publish-pypi.yml`
+  (trusted publishing / OIDC).
+
+Publishing uses PyPI **trusted publishing (OIDC)**, so no API tokens are stored in
+GitHub secrets. Each publish workflow runs its own build-and-test gate before
+uploading. Version bumps are **manual** — the version in `pyproject.toml` must be
+incremented before merging to `main`, since PyPI never allows re-uploading the same
+version number.
+
+- **Alternatives rejected:** (a) tag-based releases (publish only on `vX.Y.Z` tags)
+  — simpler, but adds a manual tagging step after merge; the branch-based flow
+  publishes automatically on merge, matching the team's preference for fewer manual
+  gates; (b) leaving `dev` protected — adds friction to daily work without
+  proportional safety, since `testing` is where the release gate actually matters;
+  (c) a single publish workflow switched by environment conditions — separate
+  TestPyPI/PyPI workflow files are clearer for a team new to packaging, and each
+  file stays self-contained and maps to one branch.
+- **Why:** the flow gives two independent verification points — a TestPyPI install
+  test, then PR review into `main` — before anything reaches real PyPI. Branch
+  protection on `testing` prevents accidental TestPyPI publishes; protection on
+  `main` prevents accidental production releases. `dev` stays low-friction for
+  iteration.
+
 ---
 
 ## Still open
