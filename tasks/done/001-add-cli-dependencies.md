@@ -84,12 +84,23 @@ All three commands must succeed with no errors.
 
 <!-- Filled in by the coding agent before moving this file to tasks/done/ -->
 
-**Status:**
+**Status:** done
 
 **Files changed:**
+- `src/peek/cli/__init__.py` (new)
+- `src/peek/__main__.py` (modified: import from `peek.cli` instead of `peek.server`)
+- `pyproject.toml` (modified: added `click` and `tomlkit` to dependencies; changed console entry point to `peek.cli:main`)
 
-**Acceptance check:**
+**Acceptance check:** passed
+```
+$ python -c "from peek.cli import main; print('import ok')"
+import ok
+$ python -c "import click; import tomlkit; print('deps ok')"
+deps ok
+$ grep 'peek = "peek.cli:main"' pyproject.toml
+peek = "peek.cli:main"
+```
 
-**Deviations:**
+**Deviations:** none
 
-**Problems:**
+**Problems:** none
