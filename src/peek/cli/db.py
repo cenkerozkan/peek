@@ -1,12 +1,12 @@
-"""``peek db add`` — interactively register a database connection."""
+"""``peek db`` — manage database connections for peek."""
 
 from typing import List, Optional
 
 import click
 from pydantic import SecretStr
 
-from peek.errors import RegistryError
-from peek.infra.config_file import save_entry
+from peek.errors import ConfigError, RegistryError
+from peek.infra.config_file import load_registry, remove_entry, save_entry
 from peek.models.config import DatabaseEntry
 from peek.services.connection_registry import ConnectionRegistry
 
@@ -73,6 +73,53 @@ def add() -> None:
 
     click.echo(
         f"Database '{alias}' added.\n"
+        "Restart the MCP server for changes to take effect.",
+        err=True,
+    )
+
+
+@db.command()
+def remove() -> None:
+    """Remove a database connection from the registry.
+
+    Shows the available aliases and prompts the user to pick one
+    for removal. No connection is opened — this is a file operation.
+    """
+    from peek.cli import resolve_config_path
+
+    path = resolve_config_path()
+
+    if not path.is_file():
+        click.echo(
+            "No config file found. Run 'peek init' first.",
+            err=True,
+        )
+        raise SystemExit(1) from None
+
+    try:
+        registry = load_registry(path)
+    except ConfigError:
+        click.echo(
+            "No config file found. Run 'peek init' first.",
+            err=True,
+        )
+        raise SystemExit(1) from None
+
+    aliases = list(registry.keys())
+    click.echo("Available database aliases:", err=True)
+    for alias in aliases:
+        click.echo(f"  - {alias}", err=True)
+
+    alias = click.prompt("Alias to remove", err=True)
+
+    try:
+        remove_entry(path, alias)
+    except ConfigError as error:
+        click.echo(str(error), err=True)
+        raise SystemExit(1) from None
+
+    click.echo(
+        f"Database '{alias}' removed.\n"
         "Restart the MCP server for changes to take effect.",
         err=True,
     )

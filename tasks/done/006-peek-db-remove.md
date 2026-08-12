@@ -83,14 +83,27 @@ All tests pass.
 
 ## Outcome
 
-<!-- Filled in by the coding agent before moving this file to tasks/done/ -->
+<!-- Filled in by the coding agent before moving this file to done/ -->
 
-**Status:**
+**Status:** done
 
 **Files changed:**
+- src/peek/cli/db.py (modified: added `remove` subcommand, added `remove_entry` to imports)
+- tests/cli/test_db_remove.py (new)
 
-**Acceptance check:**
+**Acceptance check:** passed
+```
+============================= test session starts ==============================
+platform linux - Python 3.13.14, pytest-9.1.1, pluggy-1.6.1
+rootdir: /home/issola/Desktop/peek
+configfile: pyproject.toml
+collected 4 items
 
-**Deviations:**
+tests/cli/test_db_remove.py ....                                          [100%]
 
-**Problems:**
+============================== 4 passed in 0.15s ==============================
+```
+
+**Deviations:** none
+
+**Problems:** none
