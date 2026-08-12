@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "llama.cpp": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama-server (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1"
+      },
+      "models": {
+        "~/media/issola/issolab/models/unsloth/qwen3.6/35B-A3B_Q6_K_XL/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf": {
+          "name": "qwen3.6-35B-Q_6",
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          }
+        },
+        "~/media/issola/issolab/models/jackrong/qwopus3.6/35B-A3B_Q3_K_M/Qwopus3.6-35B-A3B-Coder-MTP-Q3_K_M.gguf": {
+          "name": "qwopus3.6-35B-Q_3",
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          }
+        },
+        "~/media/issola/issolab/models/jackrong/qwopus3.6/35B-A3B_Q4_K_M/Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf": {
+          "name": "qwopus3.6-35B-Q_4",
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          }
+        }
+      }
+    }
+  }
+}
