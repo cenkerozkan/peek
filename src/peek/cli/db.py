@@ -123,3 +123,36 @@ def remove() -> None:
         "Restart the MCP server for changes to take effect.",
         err=True,
     )
+
+
+@db.command("list")
+def list_() -> None:
+    """List all configured database aliases and their dialects."""
+    from peek.cli import resolve_config_path
+
+    path = resolve_config_path()
+
+    if not path.is_file():
+        click.echo(
+            "No config file found. Run 'peek init' first.",
+            err=True,
+        )
+        raise SystemExit(1) from None
+
+    try:
+        registry = load_registry(path)
+    except ConfigError:
+        click.echo(
+            "No databases configured. Run 'peek db add'.",
+            err=True,
+        )
+        raise SystemExit(1) from None
+
+    header = f"{'ALIAS':<20} {'DIALECT':<10}"
+    separator = "-" * len(header)
+    click.echo(header, err=True)
+    click.echo(separator, err=True)
+
+    for alias, entry in registry.items():
+        dialect = entry.dialect if entry.dialect else "auto"
+        click.echo(f"{alias:<20} {dialect:<10}", err=True)

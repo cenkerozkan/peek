@@ -83,12 +83,20 @@ All tests pass.
 
 <!-- Filled in by the coding agent before moving this file to tasks/done/ -->
 
-**Status:**
+**Status:** done
 
 **Files changed:**
+- `src/peek/cli/db.py` (modified: added `list_` subcommand)
+- `tests/cli/test_db_list.py` (new)
 
-**Acceptance check:**
+**Acceptance check:** passed
 
-**Deviations:**
+```
+============================= test session starts ==============================
+platform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0
+============================== 5 passed in 0.14s
+```
 
-**Problems:**
+**Deviations:** None — implemented exactly as specified.
+
+**Problems:** None.
