@@ -13,6 +13,10 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 
 A safe, multi-database, **read-only** MCP server. An outer agent (Claude Code, Copilot) writes the SQL; `peek` enforces safety and delivers results. **No internal LLM.** See `CLAUDE.md` for hard rules and `docs/` for settled architecture.
 
+**Session identity:** I am the implementer. Work is driven by numbered task files
+under `tasks/`. Read `tasks/README.md` for the protocol and `tasks/Implementer.md`
+for my role before starting any task.
+
 ## Developer commands
 
 ```sh
@@ -31,7 +35,7 @@ Pre-commit runs in this **exact order**: `isort` → `ruff check --fix` → `ruf
 - **`services/sql_service.py` is the single safety chokepoint.** Every SQL path goes through it, which calls `safety/guard.py` before execution. Never execute SQL from a tool or anywhere else bypassing it.
 - **Credential isolation.** Connection URLs are `SecretStr` (never leaks in repr/logs). FastMCP is built with `mask_error_details=True` to catch leaks. No tool return value or error message may contain a connection string. `list_databases` returns aliases only.
 - **Every tool takes a `db` alias param.** No hardcoded connections. One DB per request.
-- **Use `pathlib.Path`, not `platformdirs`.** Resolve user config dirs via `user_config_dir("peek")`, never hardcoded paths like `~/.config`.
+- **Use `pathlib.Path` and `platformdirs`.** Resolve user config dirs via `user_config_dir("peek")`, never hardcoded paths like `~/.config` or string-concatenated paths.
 
 ## Style quirks (differ from defaults)
 
