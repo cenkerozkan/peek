@@ -99,14 +99,27 @@ All tests pass.
 
 ## Outcome
 
-<!-- Filled in by the coding agent before moving this file to tasks/done/ -->
-
-**Status:**
+**Status:** done
 
 **Files changed:**
+- `src/peek/cli/init_cmd.py` (new)
+- `src/peek/cli/__init__.py` (modified: import and register `init` command)
+- `tests/cli/test_init.py` (new)
 
-**Acceptance check:**
+**Acceptance check:** passed
 
-**Deviations:**
+```
+$ python -m pytest tests/cli/test_init.py -v
+============================== test session starts ==============================
+tests/cli/test_init.py::test_init_creates_peek_dir PASSED
+tests/cli/test_init.py::test_init_creates_gitignore PASSED
+tests/cli/test_init.py::test_init_appends_to_existing_gitignore PASSED
+tests/cli/test_init.py::test_init_skips_gitignore_if_already_listed PASSED
+tests/cli/test_init.py::test_init_refuses_if_already_initialized PASSED
+tests/cli/test_init.py::test_init_output_goes_to_stderr PASSED
+============================== 6 passed in 0.03s ===============================
+```
 
-**Problems:**
+**Deviations:** none
+
+**Problems:** The task specification says `CliRunner(mix_stderr=False)`, but the installed Click version (8.4.2) removed the `mix_stderr` parameter in 8.2. The `Result` object still has separate `stdout` and `stderr` properties, so the tests work correctly with `CliRunner()` and `result.stdout`/`result.stderr`.

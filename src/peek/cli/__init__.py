@@ -13,6 +13,7 @@ import click
 from platformdirs import user_config_dir
 
 from peek import __version__
+from peek.cli.init_cmd import init
 
 _LOCAL_CONFIG = Path(".peek") / "databases.toml"
 
@@ -64,6 +65,8 @@ def main(ctx: click.Context) -> None:
 
         build_server().run(transport="stdio", show_banner=False)
 
+
+main.add_command(init, "init")
 
 if __name__ == "__main__":
     main()
