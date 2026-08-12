@@ -106,7 +106,7 @@ string`; the server reads and validates it at startup and builds the in-memory
 
   Supersedes the earlier plan (dynamic TinyDB registry managed via MCP tools).
 
-### 7a. Admin CLI for database management (`peek db …`) — Accepted (2026-07-05)
+### 7a. Admin CLI for database management (`peek db …`) — Accepted (2026-07-05; implemented 2026-07-20)
 
 A human-facing CLI to add/remove/list database aliases, so users don't have to
 hand-edit the config file. Confirmed as the intended management path; scoped tightly
@@ -129,8 +129,8 @@ for v1.
   **restart the MCP server** for changes to take effect. Live/hot-reload is
   explicitly deferred — a running stdio subprocess is owned by the IDE and restarts
   are cheap, so an IPC/reload path isn't worth its complexity in v1.
-- **Scope / timing:** its own later phase (see `roadmap.md` → Later/deferred), after
-  the `connection_registry` interface has solidified — the CLI is a consumer of it.
+- **Scope / timing:** implemented via tasks 001–007. The `connection_registry`
+  interface had already solidified (Phases 2–6); the CLI is a thin consumer of it.
 - **Revisit condition for live support:** reconsider hot-reload after the core
   project is complete, if restart-to-apply proves too coarse in practice.
 

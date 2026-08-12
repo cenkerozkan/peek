@@ -262,14 +262,27 @@ the SQL guard — it is a different mechanism for a different threat model.
 
 ---
 
+## Admin CLI — ✅ Implemented (tasks 001–007)
+
+Fully implemented and shipped. Uses Click; creates a project-local `.peek/`
+directory via `peek init`; manages database aliases via `peek db add/remove/list`;
+all output goes to stderr (stdout is the MCP channel); connections are validated
+before persisting; **restart the MCP server to apply** changes (no live reload
+in v1). See `decisions.md` #7a.
+
+- [x] `peek init` — scaffold `.peek/` project directory (task 004)
+- [x] `peek db add` — interactive prompts for alias/URL/password, validate
+  connection before writing to local registry (task 005)
+- [x] `peek db remove` — remove an alias from the local registry (task 006)
+- [x] `peek db list` — list all configured aliases with their dialects (task 007)
+- [x] CLI dependencies + config path resolver (tasks 001–003)
+
+---
+
 ## Later / deferred (not v1)
 
 Tracked in `backlog.md`; do not start without a decision change.
 
-- [ ] Admin CLI — `peek db add/remove/list` reusing the registry interface. Human
-      tool only (never an MCP tool); writes connection strings solely to the local
-      config file; validates the connection before persisting; **restart to apply**
-      (no live reload in v1). See `decisions.md` #7a.
 - [ ] HTTP transport (core is already transport-agnostic).
 - [ ] Interactive TUI — reintroduces an internal NL→SQL brain (suspended pipeline).
 - [ ] Suspended internal NL→SQL pipeline, embedding-based schema retrieval.

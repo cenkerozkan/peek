@@ -168,10 +168,10 @@ read a hidden collection through a join, exactly as a SQL subquery could.
   connections. `register_database` / `remove_database` are not MCP tools. The only
   registry tool exposed is **`list_databases`** (read-only).
 - **Future-proofing:** add/remove logic lives in `services/connection_registry.py`
-  behind a clean interface, so a later non-model **admin CLI**
-  (`peek db add/remove/list`) can reuse it. The CLI is a human tool (never an MCP
-  tool), writes credentials only to the local config file, and requires an MCP-server
-  **restart to take effect** — no live reload in v1. Not built now. See
+  behind a clean interface for the admin CLI
+  (`peek db add/remove/list`), implemented via tasks 001–007. The CLI is a human
+  tool (never an MCP tool), writes credentials only to the local config file, and
+  requires an MCP-server **restart to take effect** — no live reload in v1. See
   `decisions.md` #7a.
 - **Cross-platform paths:** any default/derived config location is resolved with
   `platformdirs` (`user_config_dir("peek")`) — OS-correct on Windows/macOS/Linux —

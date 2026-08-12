@@ -33,10 +33,7 @@ def test_add_with_valid_sqlite(
     """Adding a valid sqlite database persists the alias and URL."""
     stderr = _run_add(
         tmp_path,
-        "mydb\n"
-        "sqlite://\n"
-        "\n"
-        "\n",
+        "mydb\nsqlite://\n\n\n",
         monkeypatch,
     )
 
@@ -57,7 +54,8 @@ def test_add_fails_on_bad_url(
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="baddb\npostgresql://bad:bad@localhost:1/nope\n\n\n",
     )
 
@@ -80,11 +78,13 @@ def test_add_appends_to_existing(
     runner = CliRunner()
 
     runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="first\nsqlite://\n\n\n",
     )
     result = runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="second\nsqlite://\n\n\n",
     )
 
@@ -106,7 +106,8 @@ def test_add_dialect_and_excludes(
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="mydb\nsqlite://\npostgres\nsecret_tbl,audit_log\n",
     )
 
@@ -130,7 +131,8 @@ def test_add_output_goes_to_stderr(
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="mydb\nsqlite://\n\n\n",
     )
 
@@ -149,7 +151,8 @@ def test_add_hides_connection_url_in_error_message(
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["db", "add"],
+        cli,
+        ["db", "add"],
         input="mydb\npostgresql://admin:p@ssw0rd@host/db\n\n\n",
     )
 

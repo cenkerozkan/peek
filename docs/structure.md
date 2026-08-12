@@ -27,6 +27,11 @@ peek/
 │       │                       #   yields AppContext, disposes engines on shutdown;
 │       │                       #   `main()` runs stdio, `show_banner=False`
 │       │
+│       ├── cli/                # ── ADMIN CLI (Click) ──
+│       │   ├── __init__.py     ✓ Click group, entry-point routing, config path resolver
+│       │   ├── init_cmd.py     ✓ `peek init` — scaffold `.peek/` project directory
+│       │   └── db.py           ✓ `peek db add/remove/list` — manage DB aliases in registry
+│       │
 │       ├── tools/              # ── MCP TOOL LAYER (thin, agent-facing) ──
 │       │   ├── context.py      ✓ AppContext + app_context() dependency seam
 │       │   ├── schema.py       ✓ list_tables, get_schema
