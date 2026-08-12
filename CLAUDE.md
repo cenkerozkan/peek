@@ -15,7 +15,8 @@ is `SQLAlchemy` + `FastMCP` + `sqlglot` (+ `pymongo`, planned). A human-facing
 interactive TUI (which *would* need its own NL→SQL brain) may come later. See
 `docs/backlog.md` for the suspended internal-pipeline idea.
 
-Status: **Phases 0–8 shipped** (SQL backends, all 5 tools, packaging, CI). Not yet
+Status: **Phases 0–8 + admin CLI shipped** (SQL backends, all 5 tools, CLI, packaging,
+CI). Not yet
 published to PyPI. Phases 9–11 (publish, backend refactor, MongoDB) are next — see
 `docs/roadmap.md`.
 
@@ -108,6 +109,7 @@ Treat `docs/` as settled truth; treat `BRAINSTORM.md` as thinking-in-progress.
 
 ## Key tech choices
 
+- **CLI:** Click — admin commands (`peek init`, `peek db add/remove/list`).
 - **MCP framework:** FastMCP (reference docs vendored in `llm_friendly_docs/fastmcp.txt`).
 - **DB access:** SQLAlchemy (dialect-agnostic) for SQL; `pymongo` for Mongo
   (planned). Both sit behind the `Backend` protocol in `backends/` — services never

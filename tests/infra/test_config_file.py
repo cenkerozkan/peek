@@ -82,7 +82,10 @@ def test_save_entry_creates_new_file(tmp_path: Path) -> None:
     assert path.is_file()
     registry = load_registry(path)
     assert "newdb" in registry
-    assert registry["newdb"].url.get_secret_value() == "postgresql+psycopg://u:p@h:5432/db"
+    assert (
+        registry["newdb"].url.get_secret_value()
+        == "postgresql+psycopg://u:p@h:5432/db"
+    )
 
 
 def test_save_entry_appends_to_existing(tmp_path: Path) -> None:
@@ -105,7 +108,9 @@ def test_save_entry_overwrites_existing_alias(tmp_path: Path) -> None:
     save_entry(path, "psql", entry)
 
     registry = load_registry(path)
-    assert registry["psql"].url.get_secret_value() == "sqlite:///overwritten.db"
+    assert (
+        registry["psql"].url.get_secret_value() == "sqlite:///overwritten.db"
+    )
 
 
 def test_save_entry_omits_defaults(tmp_path: Path) -> None:
