@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import SecretStr
 
 from peek.errors import ConfigError
 from peek.infra.config_file import load_registry, remove_entry, save_entry
@@ -75,7 +76,7 @@ def test_config_error_message_has_no_secret(tmp_path: Path) -> None:
 def test_save_entry_creates_new_file(tmp_path: Path) -> None:
     """A missing path is created with the new entry and round-trips."""
     path = tmp_path / "databases.toml"
-    entry = DatabaseEntry(url="postgresql+psycopg://u:p@h:5432/db")
+    entry = DatabaseEntry(url=SecretStr("postgresql+psycopg://u:p@h:5432/db"))
 
     save_entry(path, "newdb", entry)
 
@@ -91,7 +92,7 @@ def test_save_entry_creates_new_file(tmp_path: Path) -> None:
 def test_save_entry_appends_to_existing(tmp_path: Path) -> None:
     """Saving a second alias keeps the first entry intact."""
     path = _write(tmp_path, VALID_TOML)
-    entry = DatabaseEntry(url="sqlite:///extra.db")
+    entry = DatabaseEntry(url=SecretStr("sqlite:///extra.db"))
 
     save_entry(path, "extra", entry)
 
@@ -103,7 +104,7 @@ def test_save_entry_appends_to_existing(tmp_path: Path) -> None:
 def test_save_entry_overwrites_existing_alias(tmp_path: Path) -> None:
     """Re-saving the same alias replaces the old URL."""
     path = _write(tmp_path, VALID_TOML)
-    entry = DatabaseEntry(url="sqlite:///overwritten.db")
+    entry = DatabaseEntry(url=SecretStr("sqlite:///overwritten.db"))
 
     save_entry(path, "psql", entry)
 
@@ -116,7 +117,7 @@ def test_save_entry_overwrites_existing_alias(tmp_path: Path) -> None:
 def test_save_entry_omits_defaults(tmp_path: Path) -> None:
     """Entries with default dialect/exclude_tables omit those keys."""
     path = tmp_path / "databases.toml"
-    entry = DatabaseEntry(url="sqlite:///minimal.db")
+    entry = DatabaseEntry(url=SecretStr("sqlite:///minimal.db"))
 
     save_entry(path, "minimal", entry)
 
