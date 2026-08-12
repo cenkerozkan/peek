@@ -18,10 +18,8 @@ An implementer writes code by following task specs from the orchestrator. It nev
 6. Fill in the `## Outcome` section at the bottom of the task file (see `tasks/README.md` for format).
 7. **Stop and wait for the review.** Leave the work uncommitted in the working tree. Do not commit, do not move the task file, do not start anything else.
 8. **Only after the review is approved**, do these steps in order:
-   a. `git mv tasks/todo/NNN-x.md tasks/done/NNN-x.md`
-   b. Commit all changes (code + moved task file) in one commit.
-   c. Merge the task branch into `main`: `git checkout main && git merge task/NNN-short-name`.
-   d. **Do not push.** Do not delete the task branch.
+    a. `git mv tasks/todo/NNN-x.md tasks/done/NNN-x.md`
+    b. Commit all changes (code + moved task file) in one commit on the task branch.
 9. Stop. One task per session. Do not start the next one.
 
 **Never:**
@@ -31,11 +29,11 @@ An implementer writes code by following task specs from the orchestrator. It nev
 
 ## Git rules
 
-**Every task gets its own branch.** Create it before writing code (step 1 of the protocol). After approval, merge it into `main`. This is non-negotiable.
+**Every task gets its own branch.** Create it before writing code (step 1 of the protocol). After approval, commit the task to its branch. The orchestrator merges the branch into `main` and pushes. This is non-negotiable.
 
 **Committing requires an approved review.** Finishing a task and passing its acceptance check is not permission to commit. Report the outcome, wait, and commit only when the review comes back approved. If review findings need fixing, fix them in the working tree — there is no commit yet to amend.
 
-**Never push.** All merges stay local. The orchestrator decides when to push.
+**Never push.** Branches are pushed by the orchestrator. Do not push from the task branch directly.
 
 **Never delete a branch.** Branches are the project record and the only way to recover work that was reset or superseded. This applies to your own branches too, including ones you created and think you are finished with. Merged is not a reason to delete.
 
