@@ -24,12 +24,14 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+    "click",
     "fastmcp",
     "sqlalchemy",
     "sqlglot",
     "platformdirs",
     "pydantic",
     "pydantic-settings",
+    "tomlkit",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +69,7 @@ Repository = "https://github.com/cenkerozkan/peek"
 [project.scripts]
 # Console entry point. Launch is `uvx --from peek-db peek` (the distribution and
 # the command differ); `pipx install peek-db` and `python -m peek` also work.
-peek = "peek.server:main"
+peek = "peek.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/peek"]
