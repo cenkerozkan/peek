@@ -103,14 +103,13 @@ print('All checks passed')
 
 ## Outcome
 
-<!-- Filled in by the coding agent before moving this file to tasks/done/ -->
-
-**Status:**
+**Status:** done
 
 **Files changed:**
+- .github/workflows/publish-pypi.yml (modified)
 
-**Acceptance check:**
+**Acceptance check:** passed — All checks passed
 
-**Deviations:**
+**Deviations:** none
 
-**Problems:**
+**Problems:** none
