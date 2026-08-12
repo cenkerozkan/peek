@@ -41,3 +41,14 @@ authoritative) has these house conventions, confirmed across the Phase 7/8 updat
 - CLAUDE.md itself carries no install/launch commands (`grep -n "uvx" CLAUDE.md`
   is empty by design) — that detail lives only in README.md + decisions.md #14,
   keeping CLAUDE.md lean as its own rule requires.
+- **Decision #23 (2026-08-12): three-branch release flow.** `dev` (unprotected) ->
+  `testing` (protected, auto-publishes to TestPyPI via
+  `.github/workflows/publish-testpypi.yml`) -> `main` (protected + PR review,
+  auto-publishes to real PyPI via `.github/workflows/publish-pypi.yml`). Both use
+  PyPI trusted publishing (OIDC), no stored tokens; version bumps in
+  `pyproject.toml` are manual. Implemented by tasks 009 (TestPyPI workflow) and
+  010 (PyPI workflow). Recorded in `roadmap.md` Phase 9 as `[x]` (the workflow
+  infra is done; actually publishing 0.1.0 is still `[ ]`) and in `structure.md`'s
+  file tree alongside the existing `ci.yml` entry. If this flow changes again,
+  check all three files (decisions.md #23, roadmap.md Phase 9, structure.md tree)
+  plus any future README release-process section.

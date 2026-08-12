@@ -15,6 +15,10 @@ peek/
 ├── CLAUDE.md · BRAINSTORM.md · docs/ · llm_friendly_docs/   ✓
 ├── .github/workflows/ci.yml    ✓ lint/type/test + wheel build + entry-point smoke test
 │                                  #   on ubuntu/windows/macos (decisions.md #18)
+├── .github/workflows/publish-testpypi.yml  ✓ push to `testing` -> build/test -> TestPyPI
+│                                  #   (trusted publishing/OIDC; decisions.md #23)
+├── .github/workflows/publish-pypi.yml      ✓ push to `main` -> build/test -> PyPI
+│                                  #   (trusted publishing/OIDC; decisions.md #23)
 ├── src/
 │   └── peek/
 │       ├── __init__.py         ✓
