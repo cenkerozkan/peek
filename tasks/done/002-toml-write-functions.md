@@ -106,14 +106,14 @@ All tests pass, including the new ones.
 
 ## Outcome
 
-<!-- Filled in by the coding agent before moving this file to tasks/done/ -->
-
-**Status:**
+**Status:** done
 
 **Files changed:**
+- src/peek/infra/config_file.py (modified: added `save_entry`, `remove_entry`, `_entry_to_dict`)
+- tests/infra/test_config_file.py (modified: added 7 tests)
 
-**Acceptance check:**
+**Acceptance check:** passed — `uv run pytest tests/infra/test_config_file.py -v` (12 passed in 0.09s)
 
-**Deviations:**
+**Deviations:** none
 
-**Problems:**
+**Problems:** none
