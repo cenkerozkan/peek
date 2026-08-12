@@ -35,22 +35,17 @@ You may create or modify only these:
 
 ### `resolve_config_path() -> Path`
 
-In `src/peek/cli/__init__.py`, add:
+Add this function to `src/peek/cli/__init__.py`. It returns a `Path` and
+takes no arguments. The search order:
 
-```python
-def resolve_config_path() -> Path:
-```
-
-Logic:
-1. If `os.environ.get("PEEK_CONFIG_FILE")` is set and that path exists,
-   return `Path(os.environ["PEEK_CONFIG_FILE"])`.
-2. Local path = `Path.cwd() / ".peek" / "databases.toml"`. If it exists,
-   return it.
-3. Platform path = `Path(user_config_dir("peek")) / "databases.toml"`. If
-   it exists, return it.
-4. None exist: return the local path (step 2) as the default.
-
-Import `user_config_dir` from `platformdirs` and `Path` from `pathlib`.
+1. Check the `PEEK_CONFIG_FILE` environment variable. If set and the path
+   exists, return it.
+2. Check for `.peek/databases.toml` relative to the current working directory.
+   If it exists, return it.
+3. Check the platform config directory (via `platformdirs.user_config_dir("peek")`)
+   for `databases.toml`. If it exists, return it.
+4. If nothing exists, return the cwd-local path from step 2 as the default
+   (so error messages point the user toward `peek init`).
 
 ### Tests
 

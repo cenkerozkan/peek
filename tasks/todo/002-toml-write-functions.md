@@ -11,18 +11,13 @@ can persist database additions and removals to the TOML registry file.
 the TOML file via pydantic-settings. There is no write path. The admin CLI
 (later tasks) needs to add/remove entries and write them back.
 
-The registry file shape:
-```toml
-[databases.alias_name]
-url = "connection-string"
-dialect = "postgres"           # optional
-exclude_tables = ["secrets"]   # optional
-```
+The registry file uses TOML with a top-level `[databases]` table. Each
+sub-table is named by alias and has a required `url` key, an optional
+`dialect` key, and an optional `exclude_tables` key (list of strings).
 
-`DatabaseEntry` model (`src/peek/models/config.py`):
-- `url: SecretStr` (required)
-- `dialect: Optional[str] = None`
-- `exclude_tables: List[str] = Field(default_factory=list)`
+The `DatabaseEntry` model in `src/peek/models/config.py` has `url`
+(SecretStr, required), `dialect` (Optional str, defaults to None), and
+`exclude_tables` (list of strings, defaults to empty).
 
 **Credential isolation applies.** These functions write `url` to disk (that is
 their job), but they must never log/print it. Error messages must name only
@@ -42,15 +37,15 @@ You may create or modify only these:
 
 ### `save_entry(path: Path, alias: str, entry: DatabaseEntry) -> None`
 
-1. If `path` exists, open and parse with `tomlkit.load()`.
-2. If `path` does not exist, create a new `tomlkit.document()` with an empty
-   `[databases]` table.
-3. Build the entry dict: `{"url": entry.url.get_secret_value()}`. Add
-   `"dialect"` only if `entry.dialect is not None`. Add `"exclude_tables"`
-   only if the list is non-empty.
-4. Set `doc["databases"][alias]` to that dict.
-5. Create parent directories: `path.parent.mkdir(parents=True, exist_ok=True)`.
-6. Write with `tomlkit.dump(doc, f)`.
+1. If `path` exists, open and parse it with tomlkit to preserve formatting.
+2. If `path` does not exist, create a new tomlkit document with an empty
+   `databases` table.
+3. Build the entry as a dict with the URL extracted from the SecretStr via
+   `get_secret_value()`. Include `dialect` only if it is not None. Include
+   `exclude_tables` only if the list is non-empty.
+4. Set the alias key under `databases` in the document.
+5. Create parent directories if they do not exist.
+6. Write the document back to the file with tomlkit.
 
 Raises `ConfigError` if the existing file cannot be parsed.
 

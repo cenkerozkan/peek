@@ -29,46 +29,27 @@ You may create or modify only these:
 
 ### `src/peek/cli/init_cmd.py`
 
-A Click command `init` that:
+A Click command named `init` that:
 
-1. Checks if `.peek/` already exists in cwd. If yes, print
-   `"Already initialized: .peek/ exists"` to stderr and exit with code 1.
-2. Create `.peek/` directory.
-3. Write `.peek/databases.toml` with this content:
-   ```toml
-   # Peek database registry.
-   # Add connections with: peek db add
-   # Or edit this file directly.
-   #
-   # Example:
-   # [databases.my_postgres]
-   # url = "postgresql+psycopg://user:password@localhost:5432/mydb"
-   # dialect = "postgres"
-   # exclude_tables = ["secrets", "internal.audit_log"]
-   ```
-4. Handle `.gitignore` in cwd:
-   - If `.gitignore` exists, read it. If `.peek/` is not already listed
-     (check for the exact line `.peek/` or `.peek`), append
-     `"\n# peek — contains database credentials\n.peek/\n"`.
-   - If `.gitignore` does not exist, create it with content
-     `"# peek — contains database credentials\n.peek/\n"`.
-5. Print to stderr:
-   ```
-   Initialized .peek/ in <absolute cwd path>
-   Next step: run `peek db add` to register a database.
-   ```
+1. Checks if `.peek/` already exists in cwd. If yes, print an "already
+   initialized" message to stderr and exit with code 1.
+2. Creates the `.peek/` directory.
+3. Writes `.peek/databases.toml` with a comment-only template showing an
+   example database entry (alias, URL, dialect, exclude_tables) — all
+   commented out so it is not a valid config until the user adds a real entry.
+4. Handles `.gitignore` in cwd:
+   - If `.gitignore` exists, read it. If `.peek/` is not already listed,
+     append it with a comment noting it contains database credentials.
+   - If `.gitignore` does not exist, create one containing `.peek/`.
+5. Prints a confirmation to stderr with the absolute path and a next-step
+   hint to run `peek db add`.
 
-Use `click.echo(..., err=True)` for all output (stdout is reserved for
-MCP protocol).
+All output uses `click.echo(..., err=True)` — stdout is the MCP channel.
 
 ### `src/peek/cli/__init__.py`
 
-Add at the bottom, after the `cli` group definition:
-
-```python
-from peek.cli.init_cmd import init
-cli.add_command(init)
-```
+Import the `init` command from `peek.cli.init_cmd` and register it on the
+`cli` group with `add_command`.
 
 ### Tests
 
@@ -96,9 +77,8 @@ the `cli` group from `peek.cli` and invoke it with `["init"]`.
 
 - All output via `click.echo(..., err=True)` — stdout must remain clean.
 - Use `pathlib.Path` for all file operations.
-- The template file is static text, not generated from `tomlkit` — it is
-  a comment-only example, not a valid config (no actual `[databases.x]`
-  section without comments).
+- The template file is static text, not generated via tomlkit — it is
+  a comment-only example, not a valid config.
 - Do not validate any database connection — this just creates files.
 
 ## Acceptance check

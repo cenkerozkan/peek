@@ -32,49 +32,26 @@ You may create or modify only these:
 
 ### `pyproject.toml`
 
-Add to `dependencies`:
-```
-"click",
-"tomlkit",
-```
-
-Change entry point:
-```toml
-[project.scripts]
-peek = "peek.cli:main"
-```
+Add `click` and `tomlkit` to the `dependencies` list. Change the console
+entry point from `peek.server:main` to `peek.cli:main`.
 
 ### `src/peek/cli/__init__.py`
 
-```python
-import click
-from peek import __version__
+Define a Click group using `invoke_without_command=True`. When no subcommand
+is given, the group callback must start the MCP server by importing
+`build_server` from `peek.server` and calling `.run(transport="stdio",
+show_banner=False)`. Add a `--version` option that reads from
+`peek.__version__`.
 
-@click.group(invoke_without_command=True)
-@click.version_option(version=__version__, prog_name="peek")
-@click.pass_context
-def cli(ctx: click.Context) -> None:
-    if ctx.invoked_subcommand is None:
-        from peek.server import build_server
-        build_server().run(transport="stdio", show_banner=False)
-
-def main() -> None:
-    cli()
-```
-
-The lazy import of `peek.server` inside the `if` block is intentional — it
-avoids loading SQLAlchemy/FastMCP when the user runs a subcommand like
+Lazy-import `peek.server` inside the no-subcommand branch — this avoids
+loading SQLAlchemy/FastMCP when the user runs a subcommand like
 `peek --version`.
+
+Export a `main` function that invokes the Click group.
 
 ### `src/peek/__main__.py`
 
-Change to:
-```python
-from peek.cli import main
-
-if __name__ == "__main__":
-    main()
-```
+Change the import to use `main` from `peek.cli` instead of `peek.server`.
 
 ## Constraints
 
