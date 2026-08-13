@@ -22,9 +22,14 @@ reasoning happens in the agent you already use.
 
 - [Why peek](#why-peek)
 - [Safety model](#safety-model)
+- [Quick start](#quick-start)
+  - [CLI reference](#cli-reference)
 - [Install](#install)
   - [Database drivers](#database-drivers)
 - [Configure your databases](#configure-your-databases)
+  - [CLI setup (recommended)](#cli-setup-recommended)
+  - [Manual setup](#manual-setup)
+  - [Config file location](#config-file-location)
 - [Add peek to your editor](#add-peek-to-your-editor)
   - [Claude Code](#claude-code)
   - [Cursor](#cursor)
@@ -125,21 +130,50 @@ In an editor config, put the extra in the `--from` argument:
 { "command": "uvx", "args": ["--from", "peek-db[postgres]", "peek"] }
 ```
 
+## Quick start
+
+```sh
+peek init            # creates .peek/databases.toml in the current directory
+peek db add          # prompts for alias, URL, dialect, and excluded tables
+```
+
+Then add `peek` to your editor (see below).
+
+### CLI reference
+
+| Command           | What it does                                     |
+| ----------------- | ------------------------------------------------ |
+| `peek`            | Start the MCP stdio server                       |
+| `peek --version`  | Show the installed version                       |
+| `peek init`       | Create a `.peek/` config directory               |
+| `peek db add`     | Add a database connection interactively          |
+| `peek db remove`  | Remove a database connection                     |
+| `peek db list`    | List configured databases and their dialects     |
+
 ## Configure your databases
 
 `peek` reads an alias → connection-string registry from a TOML file. **This file
 is the only place your credentials live** — not in the repo, not in the editor
 config, not in the agent's context.
 
-Create `databases.toml` in your user config directory:
+### CLI setup (recommended)
 
-| OS      | Path                                          |
-| ------- | --------------------------------------------- |
-| macOS   | `~/Library/Application Support/peek/databases.toml` |
-| Linux   | `~/.config/peek/databases.toml`                |
-| Windows | `%LOCALAPPDATA%\peek\databases.toml`           |
+The easiest way to register a database is with the interactive CLI:
 
-Or put it anywhere and point `PEEK_CONFIG_FILE` at it.
+```sh
+peek init            # creates a .peek/ directory with a databases.toml template
+peek db add          # prompts for alias, URL, dialect, and excluded tables
+peek db list         # shows what's registered
+peek db remove       # removes an entry
+```
+
+`peek init` creates `.peek/databases.toml` in the current project directory.
+The `.peek/` directory is automatically added to `.gitignore` (it holds
+credentials).
+
+### Manual setup
+
+You can also edit `.peek/databases.toml` directly. The TOML structure is:
 
 ```toml
 # A local SQLite file. Note the four slashes for an absolute path.
@@ -169,6 +203,22 @@ Each entry takes:
 
 If this file is missing, `peek` exits at startup — which your editor will report
 as the server failing to start.
+
+### Config file location
+
+`peek` resolves the config file in this order:
+
+1. `PEEK_CONFIG_FILE` environment variable, if set
+2. `.peek/databases.toml` in the current directory
+3. `databases.toml` in the platform user config directory:
+
+| OS      | Path                                          |
+| ------- | --------------------------------------------- |
+| macOS   | `~/Library/Application Support/peek/databases.toml` |
+| Linux   | `~/.config/peek/databases.toml`                |
+| Windows | `%LOCALAPPDATA%\peek\databases.toml`           |
+
+You can always point `PEEK_CONFIG_FILE` at a custom location.
 
 ## Add peek to your editor
 
@@ -307,6 +357,7 @@ uv run pre-commit run --all-files
 | Killed / suspended ideas                 | `docs/backlog.md`      |
 | Code conventions                         | `docs/conventions.md`  |
 | Roadmap                                  | `docs/roadmap.md`      |
+| Testing & installation from TestPyPI     | `docs/testing-installation.md` |
 
 [`CLAUDE.md`](CLAUDE.md) is the entry point for AI agents working on this repo.
 
