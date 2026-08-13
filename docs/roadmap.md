@@ -197,10 +197,17 @@ Make peek installable as an isolated app. See `decisions.md` #14 (amended
 
 - [ ] **Rename the distribution to `peek-db`** in `pyproject.toml` (decision #19).
       Do this *before* publishing — it is a one-line edit now and impossible later.
+- [x] **Three-branch release flow (`dev` -> `testing` -> `main`) with CI/CD publish
+      workflows** (tasks 009–010; decision #23). `testing` and `main` are protected
+      branches; a push to `testing` auto-publishes to **TestPyPI**
+      (`.github/workflows/publish-testpypi.yml`) and a push to `main`
+      auto-publishes to **real PyPI** (`.github/workflows/publish-pypi.yml`), both
+      via trusted publishing (OIDC), no stored tokens.
 - [ ] **Publish `peek-db` 0.1.0 to PyPI**, claiming the distribution name (moved
       up from Phase 8 — local install verification is done, the publish step is
-      not). Dry-run on **TestPyPI** first: a version number, once published, can
-      never be reused, so a broken 0.1.0 is permanent.
+      not). The `testing`-branch workflow above dry-runs new versions on
+      **TestPyPI** first: a version number, once published, can never be reused,
+      so a broken 0.1.0 is permanent.
 - [x] README rewritten as a published project: purpose-first intro, table of
       contents, install, per-editor MCP setup (Claude Code / Cursor / VS Code
       Copilot), registry config, tool reference, settings.

@@ -38,10 +38,9 @@ def _write_gitignore(cwd: Path) -> None:
 
 @click.command()
 def init() -> None:
-    """Initialize a .peek/ project directory with a config template.
+    """Create a .peek/ config directory with a databases.toml template.
 
-    Creates the .peek/ directory, writes a commented databases.toml
-    template, and ensures .peek/ is listed in .gitignore.
+    After init, run 'peek db add' to register your first database.
     """
     cwd = Path.cwd()
     peek_dir = cwd / ".peek"

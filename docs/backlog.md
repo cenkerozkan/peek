@@ -63,6 +63,22 @@ if no registry file exists yet.
   least, since a confusing `ConfigError` on first run is a bad first impression
   for a freshly-installed tool.
 
+## Replace Click with Textual for a richer CLI — Suspended (2026-08-13)
+
+Swap Click for [Textual](https://github.com/Textualize/textual) to get a
+more dynamic, interactive terminal experience: inline validation as you
+type, autocomplete for aliases and dialect names, styled output, and
+potentially a lightweight TUI mode for browsing schema and results.
+
+- **Why deferred:** Click works fine for the current command set, and the
+  CLI is not the primary interface (agents interact via MCP, not the
+  terminal). Adding a TUI framework now would be scope creep and a new
+  dependency for marginal gain at this stage.
+- **Revival condition:** when the human-facing TUI is prioritized (same
+  trigger as the internal NL→SQL pipeline revival), or if the CLI grows
+  enough interactive flows that Click's prompt-based model becomes
+  noticeably limiting.
+
 ---
 
 ## Earlier superseded decisions (for reference)

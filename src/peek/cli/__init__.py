@@ -58,8 +58,7 @@ def resolve_config_path() -> Path:
 def main(ctx: click.Context) -> None:
     """Safe, multi-database, read-only SQL and NoSQL MCP server.
 
-    ``peek`` without subcommands starts the MCP stdio server.
-    Subcommands (init, db) arrive in later tasks.
+    Run without a subcommand to start the MCP stdio server.
     """
     if ctx.invoked_subcommand is None:
         from peek.server import build_server

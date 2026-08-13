@@ -1,8 +1,8 @@
-name: Publish to TestPyPI
+name: Publish to PyPI
 
 on:
   push:
-    branches: [testing]
+    branches: [main]
     paths:
       - 'src/**'
       - 'pyproject.toml'
@@ -44,7 +44,7 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: testpypi
+    environment: pypi
     permissions:
       id-token: write
       contents: read
@@ -56,10 +56,8 @@ jobs:
           name: distribution-packages
           path: dist/
 
-      - name: Publish to TestPyPI
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
 
   release:
     needs: publish
@@ -82,10 +80,9 @@ jobs:
           VERSION=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "//;s/"//')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Pre-release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}-rc
+          tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
-          prerelease: true
           files: dist/*
