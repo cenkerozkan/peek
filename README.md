@@ -208,19 +208,8 @@ that as the server failing to start.
 
 ### Config file location
 
-`peek` resolves the config file in this order:
-
-1. `PEEK_CONFIG_FILE` environment variable, if set
-2. `.peek/databases.toml` in the current directory
-3. `databases.toml` in the platform user config directory:
-
-| OS      | Path                                          |
-| ------- | --------------------------------------------- |
-| macOS   | `~/Library/Application Support/peek/databases.toml` |
-| Linux   | `~/.config/peek/databases.toml`                |
-| Windows | `%LOCALAPPDATA%\peek\databases.toml`           |
-
-You can always point `PEEK_CONFIG_FILE` at a custom location.
+`peek` looks for `.peek/databases.toml` in the current project directory.
+`.peek/` is created by `peek init` and is automatically added to `.gitignore`.
 
 ## Add peek to your editor
 
@@ -233,11 +222,10 @@ Every editor below launches the same command. If you installed with `uv tool` or
 claude mcp add peek -- uvx --from peek-db peek
 ```
 
-Add `-s user` to make it available in every project rather than just this one,
-and use `--env` if your registry lives somewhere non-default:
+Add `-s user` to make it available in every project rather than just this one:
 
 ```sh
-claude mcp add peek -s user --env PEEK_CONFIG_FILE=/path/to/databases.toml -- uvx --from peek-db peek
+claude mcp add peek -s user -- uvx --from peek-db peek
 ```
 
 Verify with `/mcp` inside Claude Code: `peek` should be listed as connected,
@@ -297,10 +285,9 @@ Every tool takes a `db` argument: the alias from `list_databases`.
 
 Environment variables, all prefixed `PEEK_`:
 
-| Variable           | Default                              | Meaning                              |
-| ------------------ | ------------------------------------ | ------------------------------------ |
-| `PEEK_CONFIG_FILE` | `databases.toml` in the user config dir | Path to the connection registry.  |
-| `PEEK_MAX_ROWS`    | `1000`                               | Row cap applied by `run_sql`. Results beyond it are truncated, and `truncated` is set on the response. |
+| Variable        | Default | Meaning |
+| --------------- | ------- | ------- |
+| `PEEK_MAX_ROWS` | `1000`  | Row cap applied by `run_sql`. Results beyond it are truncated, and `truncated` is set on the response. |
 
 ## Roadmap
 

@@ -24,7 +24,7 @@ def require_config() -> Path:
     Raises:
         SystemExit: Code 1 with a message to stderr when either check fails.
     """
-    from peek.cli import resolve_config_path
+    from peek.config import resolve_config_path
 
     path = resolve_config_path()
 

@@ -7,10 +7,19 @@ import pytest
 from peek.config import AppConfig
 
 
-def test_default_resolved_config_file_ends_with_databases_toml() -> None:
-    """With no override, the default lives in the platform config dir."""
+def test_default_resolved_config_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no override, the default comes from resolve_config_path."""
+    local_dir = tmp_path / ".peek"
+    local_dir.mkdir()
+    (local_dir / "databases.toml").write_text("")
+
+    monkeypatch.chdir(tmp_path)
+
     config = AppConfig()
 
+    assert config.resolved_config_file() == local_dir / "databases.toml"
     assert config.resolved_config_file().name == "databases.toml"
 
 
