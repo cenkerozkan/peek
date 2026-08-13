@@ -2,8 +2,8 @@
 
 ## Goal
 
-Bring `README.md` up to date with the CLI that shipped in Phases 7–8 and
-the new `docs/testing-installation.md` guide.
+Bring `../../README.md` up to date with the CLI that shipped in Phases 7–8 and
+the new `../../docs/testing-installation.md` guide.
 
 ## Context
 
@@ -13,14 +13,14 @@ project now has `peek init` and `peek db add/remove/list`, which are the
 intended way to set up and manage databases. The README should lead with
 the CLI workflow and keep manual TOML editing as a secondary alternative.
 
-Additionally, `docs/testing-installation.md` was added recently but is
+Additionally, `../../docs/testing-installation.md` was added recently but is
 not listed in the Documentation table at the bottom of the README.
 
 ## Files
 
 You may create or modify only this:
 
-- `README.md`
+- `../../README.md`
 
 ## Specification
 
@@ -52,7 +52,7 @@ a platform-specific directory. Rewrite it so the primary path is:
 
 Mention that `peek init` creates a `.peek/` directory in the current
 project with a `databases.toml` template inside it, and that `.peek/`
-is automatically added to `.gitignore` (since it holds credentials).
+is automatically added to `../../.gitignore` (since it holds credentials).
 This is the project-local config path — distinct from the platform
 config directory (`~/.config/peek/`, `~/Library/Application Support/peek/`,
 etc.), which is also supported.
@@ -69,7 +69,7 @@ in the current directory, then the platform config directory.
 
 ### 3. Update the Documentation table
 
-Add a row for `docs/testing-installation.md`:
+Add a row for `../../docs/testing-installation.md`:
 
 ```
 | Testing & installation from TestPyPI    | `docs/testing-installation.md` |

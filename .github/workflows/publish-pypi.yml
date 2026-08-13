@@ -3,6 +3,10 @@ name: Publish to PyPI
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
 
 jobs:
   build:
