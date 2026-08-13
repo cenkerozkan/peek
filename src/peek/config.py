@@ -3,10 +3,25 @@
 from pathlib import Path
 from typing import Optional
 
-from platformdirs import user_config_dir
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_REGISTRY_FILENAME = "databases.toml"
+_LOCAL_CONFIG = Path(".peek") / "databases.toml"
+
+
+def resolve_config_path() -> Path:
+    """Return the path to the databases.toml file the CLI should use.
+
+    ``.peek/databases.toml`` relative to the current working directory.
+
+    Returns:
+        Path that exists, or the cwd-local default if nothing
+        exists anywhere.
+    """
+    local_path = Path.cwd() / _LOCAL_CONFIG
+    if local_path.exists():
+        return local_path
+
+    return local_path
 
 
 class AppConfig(BaseSettings):
@@ -33,4 +48,4 @@ class AppConfig(BaseSettings):
         """
         if self.config_file is not None:
             return self.config_file
-        return Path(user_config_dir("peek")) / _REGISTRY_FILENAME
+        return Path(resolve_config_path())
