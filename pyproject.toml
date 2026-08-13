@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 # the roadmap, and a PyPI name is permanent. The import package and the console
 # command both remain `peek` — see decisions.md #19.
 name = "peek-db"
-version = "0.1.1"
+version = "0.1.3"
 description = "Safe, multi-database, read-only SQL and NoSQL MCP server"
 readme = "README.md"
 requires-python = ">=3.13"

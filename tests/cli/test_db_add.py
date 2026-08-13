@@ -144,6 +144,42 @@ def test_add_output_goes_to_stderr(
     assert "mydb" in result.stderr
 
 
+def test_add_requires_init_no_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Adding a database when no .peek/ directory exists exits with code 1."""
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["db", "add"], input="")
+
+    assert result.exit_code == 1
+    assert "peek is not initialized" in result.stderr
+
+    toml = tmp_path / ".peek" / "databases.toml"
+    assert not toml.exists()
+
+
+def test_add_requires_init_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Adding a database when .peek/ exists but databases.toml is missing.
+
+    Exits with code 1.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".peek").mkdir()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["db", "add"], input="")
+
+    assert result.exit_code == 1
+    assert "No config file found" in result.stderr
+
+    toml = tmp_path / ".peek" / "databases.toml"
+    assert not toml.exists()
+
+
 def test_add_hides_connection_url_in_error_message(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -161,14 +197,20 @@ def test_add_hides_connection_url_in_error_message(
 
     assert result.exit_code == 1
 
-    # The error line should name only the alias
-    for line in result.stderr.splitlines():
-        if "Could not connect to database" in line:
-            assert "mydb" in line
-            assert "postgresql" not in line
-            assert "p@ssw0rd" not in line
-            assert "admin" not in line
-            assert "host" not in line
-            break
+    # Extract just the error message portion (the RegistryError string),
+    # not the full stderr blob. On Windows, CliRunner concatenates all
+    # stderr into one line, so scanning individual lines would trip on
+    # prompt-hint example URLs that contain "postgresql" in the text.
+    error_msg: str
+    if "Could not connect to database" in result.stderr:
+        error_msg = result.stderr.split("Could not connect to database")[1]
     else:
         pytest.fail("Could not connect to database error not found in stderr")
+
+    # The error message should name only the alias, never the URL or
+    # credentials
+    assert "mydb" in error_msg
+    assert "postgresql" not in error_msg
+    assert "p@ssw0rd" not in error_msg
+    assert "admin" not in error_msg
+    assert "host" not in error_msg
