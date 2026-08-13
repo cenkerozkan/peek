@@ -144,6 +144,42 @@ def test_add_output_goes_to_stderr(
     assert "mydb" in result.stderr
 
 
+def test_add_requires_init_no_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Adding a database when no .peek/ directory exists exits with code 1."""
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["db", "add"], input="")
+
+    assert result.exit_code == 1
+    assert "peek is not initialized" in result.stderr
+
+    toml = tmp_path / ".peek" / "databases.toml"
+    assert not toml.exists()
+
+
+def test_add_requires_init_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Adding a database when .peek/ exists but databases.toml is missing.
+
+    Exits with code 1.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".peek").mkdir()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["db", "add"], input="")
+
+    assert result.exit_code == 1
+    assert "No config file found" in result.stderr
+
+    toml = tmp_path / ".peek" / "databases.toml"
+    assert not toml.exists()
+
+
 def test_add_hides_connection_url_in_error_message(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

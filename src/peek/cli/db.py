@@ -5,6 +5,7 @@ from typing import List, Optional
 import click
 from pydantic import SecretStr
 
+from peek.cli.checks import require_config
 from peek.errors import ConfigError, RegistryError
 from peek.infra.config_file import load_registry, remove_entry, save_entry
 from peek.models.config import DatabaseEntry
@@ -24,6 +25,8 @@ def add() -> None:
     Prompts for alias, connection URL, dialect override, and
     excluded tables. Validates the connection before persisting.
     """
+    path = require_config()
+
     click.echo(
         "Register a new database connection.\n"
         "Example:\n"
@@ -91,9 +94,6 @@ def add() -> None:
         click.echo(str(error), err=True)
         raise SystemExit(1) from None
 
-    from peek.cli import resolve_config_path
-
-    path = resolve_config_path()
     save_entry(path, alias, entry)
 
     click.echo(
@@ -110,22 +110,13 @@ def remove() -> None:
     The database is unregistered from databases.toml. No data is deleted.
     Restart the MCP server afterwards for the change to take effect.
     """
-    from peek.cli import resolve_config_path
-
-    path = resolve_config_path()
-
-    if not path.is_file():
-        click.echo(
-            "No config file found. Run 'peek init' first.",
-            err=True,
-        )
-        raise SystemExit(1) from None
+    path = require_config()
 
     try:
         registry = load_registry(path)
     except ConfigError:
         click.echo(
-            "No config file found. Run 'peek init' first.",
+            "No databases configured. Run 'peek db add'.",
             err=True,
         )
         raise SystemExit(1) from None
@@ -156,16 +147,7 @@ def list_() -> None:
 
     Shows every database registered in the active databases.toml file.
     """
-    from peek.cli import resolve_config_path
-
-    path = resolve_config_path()
-
-    if not path.is_file():
-        click.echo(
-            "No config file found. Run 'peek init' first.",
-            err=True,
-        )
-        raise SystemExit(1) from None
+    path = require_config()
 
     try:
         registry = load_registry(path)
