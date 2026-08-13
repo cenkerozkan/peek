@@ -161,14 +161,20 @@ def test_add_hides_connection_url_in_error_message(
 
     assert result.exit_code == 1
 
-    # The error line should name only the alias
-    for line in result.stderr.splitlines():
-        if "Could not connect to database" in line:
-            assert "mydb" in line
-            assert "postgresql" not in line
-            assert "p@ssw0rd" not in line
-            assert "admin" not in line
-            assert "host" not in line
-            break
+    # Extract just the error message portion (the RegistryError string),
+    # not the full stderr blob. On Windows, CliRunner concatenates all
+    # stderr into one line, so scanning individual lines would trip on
+    # prompt-hint example URLs that contain "postgresql" in the text.
+    error_msg: str
+    if "Could not connect to database" in result.stderr:
+        error_msg = result.stderr.split("Could not connect to database")[1]
     else:
         pytest.fail("Could not connect to database error not found in stderr")
+
+    # The error message should name only the alias, never the URL or
+    # credentials
+    assert "mydb" in error_msg
+    assert "postgresql" not in error_msg
+    assert "p@ssw0rd" not in error_msg
+    assert "admin" not in error_msg
+    assert "host" not in error_msg
